@@ -1,41 +1,60 @@
-# Python-generated files
+# Python
 __pycache__/
-*.py[oc]
+*.py[cod]
+*$py.class
+*.so
+.Python
 build/
+develop-eggs/
 dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
 wheels/
-checkpoints/
-*.egg-info
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Virtual environments
-.venv
-.python-version
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
 
-# IDE settings
-.idea/
+# IDEs
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# Other files
+# OS
 .DS_Store
-tmp
-.wandb
+Thumbs.db
 
-# Model checkpoints
-*.ckpt
-*.pt
-*.safetensors
-*.sft
+# Models (too large for git - download separately)
+models/*.safetensors
+models/*.bin
+models/*.pt
+models/*.ckpt
 
-# Media files
-*.gif
-*.heic
-*.heif
-*.jpg
-*.jpeg
-*.json
-*.m4a
-*.mov
+# Large files
 *.mp4
-*.png
-*.wav
-*.webp
+*.avi
+*.mov
+*.mkv
+webui/uploads/*
+webui/outputs/*
+
+# Logs
+*.log
+
+# Temporary files
+.cache/
+tmp/
+temp/

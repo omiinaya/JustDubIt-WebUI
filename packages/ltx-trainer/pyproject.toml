@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Anonymous", email = "anonymous@anonymous.invalid" }
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "ltx-core",
     "accelerate>=1.2.1",
