@@ -36,3 +36,16 @@ systemctl enable --now just-dubit-webui
 ```
 
 Access at http://your-server:5000
+
+## Model Access Requirements
+
+### Gemma Text Encoder License
+
+Before downloading models, you must accept Google's license terms for the Gemma text encoder:
+
+1. Visit: https://huggingface.co/google/gemma-3-12b-it-qat-q4_0-unquantized
+2. Click **"Accept License"** or **"Request Access"**
+3. Wait for approval (usually instant)
+4. Verify access: `huggingface-cli whoami`
+
+**Without this step, downloads will fail with 403 Forbidden error.**

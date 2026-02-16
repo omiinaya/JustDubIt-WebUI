@@ -85,6 +85,26 @@ The following models are required and will be downloaded automatically:
 
 **Total:** ~76GB
 
+### ⚠️ Pre-Download Requirements
+
+Before running the model download script, you **must** complete these steps:
+
+1. **Accept Gemma License** (Required)
+   - Visit: https://huggingface.co/google/gemma-3-12b-it-qat-q4_0-unquantized
+   - Click **"Accept License"** or **"Request Access"**
+   - Wait for approval (usually instant)
+   - This is required for the Gemma text encoder
+
+2. **Verify HuggingFace Token**
+   - Ensure your HF_TOKEN has been granted access
+   - Test with: `huggingface-cli whoami`
+
+**Note:** The download will fail with a 403 error if you haven't accepted the Gemma license terms.
+
+| Gemma Text Encoder | 23GB | Text understanding |
+
+**Total:** ~76GB
+
 ---
 
 ## 💻 Usage
