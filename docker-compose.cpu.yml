@@ -1,0 +1,24 @@
+services:
+  justdubit-webui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: justdubit-webui
+    restart: unless-stopped
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      - GEMMA_ROOT=/opt/gemma
+      - FLASK_PORT=5000
+      - FLASK_HOST=0.0.0.0
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./models:/app/models
+      - gemma-models:/opt/gemma
+      - ./webui/uploads:/app/webui/uploads
+      - ./webui/outputs:/app/webui/outputs
+    working_dir: /app
+
+volumes:
+  gemma-models:
