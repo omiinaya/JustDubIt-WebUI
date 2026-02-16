@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JustDubIt WebUI - AI Video Dubbing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        .header {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #888;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        .main-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .panel {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .panel h2 {
+            margin-bottom: 20px;
+            color: #667eea;
+            font-size: 1.3em;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+            font-weight: 500;
+        }
+        
+        input[type="file"],
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .params-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .param-group label {
+            font-size: 0.9em;
+            color: #888;
+        }
+        
+        .param-group input {
+            padding: 10px;
+        }
+        
+        .generate-btn {
+            width: 100%;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 20px;
+        }
+        
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        
+        .generate-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .jobs-panel {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .jobs-panel h2 {
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+        
+        .job-item {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .job-id {
+            font-family: monospace;
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        .job-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .status-queued { background: #f39c12; }
+        .status-processing { background: #3498db; }
+        .status-completed { background: #2ecc71; }
+        .status-failed { background: #e74c3c; }
+        
+        .job-progress {
+            margin: 10px 0;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+        
+        .job-message {
+            color: #888;
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+        
+        .job-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: opacity 0.2s;
+        }
+        
+        .btn:hover {
+            opacity: 0.8;
+        }
+        
+        .btn-download {
+            background: #2ecc71;
+            color: #fff;
+        }
+        
+        .btn-delete {
+            background: #e74c3c;
+            color: #fff;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: #fff;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .notification.success { background: #2ecc71; }
+        .notification.error { background: #e74c3c; }
+        
+        .info-box {
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+        
+        .info-box p {
+            color: #888;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+        
+        code {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>JustDubIt WebUI</h1>
+        <p>AI-Powered Video Translation & Lip Sync</p>
+    </div>
+    
+    <div class="container">
+        <div class="main-panel">
+            <div class="panel">
+                <h2>🎬 Video Upload</h2>
+                
+                <div class="info-box">
+                    <h3>💡 Prompt Format</h3>
+                    <p>Use this format for best results:<br>
+                    <code>The [person] is speaking [Language], saying: "[Dialogue]"</code></p>
+                </div>
+                
+                <form id="dubForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="video">Select Video File</label>
+                        <input type="file" id="video" name="video" accept=".mp4,.avi,.mov,.mkv,.webm" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="prompt">Translation Prompt</label>
+                        <textarea id="prompt" name="prompt" placeholder="Example: The man is speaking Spanish, saying: 'Hola mundo, ¿cómo estás?'" required></textarea>
+                    </div>
+                    
+                    <div class="params-grid">
+                        <div class="param-group">
+                            <label for="height">Height (px)</label>
+                            <input type="number" id="height" name="height" value="512" min="256" max="1024" step="64">
+                        </div>
+                        <div class="param-group">
+                            <label for="width">Width (px)</label>
+                            <input type="number" id="width" name="width" value="768" min="256" max="1024" step="64">
+                        </div>
+                        <div class="param-group">
+                            <label for="steps">Steps</label>
+                            <input type="number" id="steps" name="steps" value="30" min="10" max="100">
+                        </div>
+                        <div class="param-group">
+                            <label for="cfg">CFG Scale</label>
+                            <input type="number" id="cfg" name="cfg" value="3.0" min="1.0" max="10.0" step="0.5">
+                        </div>
+                        <div class="param-group">
+                            <label for="fps">Frame Rate</label>
+                            <input type="number" id="fps" name="fps" value="25" min="15" max="60">
+                        </div>
+                        <div class="param-group">
+                            <label for="seed">Seed</label>
+                            <input type="number" id="seed" name="seed" value="42" min="0">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="generate-btn" id="submitBtn">
+                        <span id="btnText">🚀 Start Dubbing</span>
+                    </button>
+                </form>
+            </div>
+            
+            <div class="panel">
+                <h2>📋 Jobs</h2>
+                <div id="jobsList">
+                    <div class="empty-state">No jobs yet. Upload a video to get started!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let jobs = [];
+        let refreshInterval;
+        
+        // Load jobs on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadJobs();
+            refreshInterval = setInterval(loadJobs, 5000);
+        });
+        
+        // Form submission
+        document.getElementById('dubForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            
+            submitBtn.disabled = true;
+            btnText.innerHTML = '<span class="loading"></span> Uploading...';
+            
+            try {
+                const response = await fetch('/api/dub', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showNotification('Job submitted successfully! Job ID: ' + data.job_id, 'success');
+                    e.target.reset();
+                    loadJobs();
+                } else {
+                    showNotification('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showNotification('Error: ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                btnText.textContent = '🚀 Start Dubbing';
+            }
+        });
+        
+        // Load jobs
+        async function loadJobs() {
+            try {
+                const response = await fetch('/api/jobs');
+                const data = await response.json();
+                jobs = data.jobs.reverse(); // Show newest first
+                renderJobs();
+            } catch (error) {
+                console.error('Error loading jobs:', error);
+            }
+        }
+        
+        // Render jobs list
+        function renderJobs() {
+            const jobsList = document.getElementById('jobsList');
+            
+            if (jobs.length === 0) {
+                jobsList.innerHTML = '<div class="empty-state">No jobs yet. Upload a video to get started!</div>';
+                return;
+            }
+            
+            jobsList.innerHTML = jobs.map(job => `
+                <div class="job-item">
+                    <div class="job-header">
+                        <span class="job-id">${job.id}</span>
+                        <span class="job-status status-${job.status}">${job.status.toUpperCase()}</span>
+                    </div>
+                    <div class="job-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${job.progress}%"></div>
+                        </div>
+                    </div>
+                    <div class="job-message">${job.message}</div>
+                    ${job.status === 'completed' ? `
+                        <div class="job-actions">
+                            <button class="btn btn-download" onclick="downloadJob('${job.id}')">⬇️ Download</button>
+                            <button class="btn btn-delete" onclick="deleteJob('${job.id}')">🗑️ Delete</button>
+                        </div>
+                    ` : ''}
+                    ${job.status === 'failed' ? `
+                        <div class="job-actions">
+                            <button class="btn btn-delete" onclick="deleteJob('${job.id}')">🗑️ Delete</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+        
+        // Download job
+        async function downloadJob(jobId) {
+            window.open(`/api/download/${jobId}`, '_blank');
+        }
+        
+        // Delete job
+        async function deleteJob(jobId) {
+            if (!confirm('Delete this job?')) return;
+            
+            try {
+                const response = await fetch(`/api/delete/${jobId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showNotification('Job deleted', 'success');
+                    loadJobs();
+                } else {
+                    const data = await response.json();
+                    showNotification('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showNotification('Error: ' + error.message, 'error');
+            }
+        }
+        
+        // Show notification
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
