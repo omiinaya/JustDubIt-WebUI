@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+
+# Models (too large, mount as volume)
+models/*.safetensors
+models/*.bin
+models/*.pt
+models/*.ckpt
+models/.cache/
+
+# Data
+webui/uploads/*
+webui/outputs/*
+!webui/uploads/.gitkeep
+!webui/outputs/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+.cache/
+tmp/
+temp/

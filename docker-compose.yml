@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  justdubit-webui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: justdubit-webui
+    restart: unless-stopped
+    
+    # GPU support
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    
+    # Environment variables
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      - GEMMA_ROOT=/opt/gemma
+      - FLASK_PORT=5000
+      - FLASK_HOST=0.0.0.0
+      - PYTHONUNBUFFERED=1
+    
+    # Ports
+    ports:
+      - "5000:5000"
+    
+    # Volumes
+    volumes:
+      # Persist models (download once)
+      - ./models:/app/models
+      - gemma-models:/opt/gemma
+      # Persist uploads and outputs
+      - ./webui/uploads:/app/webui/uploads
+      - ./webui/outputs:/app/webui/outputs
+    
+    # Working directory
+    working_dir: /app
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  gemma-models:
+    driver: local
+
+networks:
+  default:
+    driver: bridge
