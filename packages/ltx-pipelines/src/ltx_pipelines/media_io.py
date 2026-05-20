@@ -213,9 +213,9 @@ def decode_audio_from_file(path: str, device: torch.device) -> tuple[torch.Tenso
         audio_stream = next(s for s in container.streams if s.type == "audio")
         sample_rate = audio_stream.sample_rate
         for frame in container.decode(audio_stream):
-            # frame.to_ndarray() is [channels, samples]
+            # frame.to_ndarray() is [channels, samples]  # noqa: ERA001
             audio.append(torch.tensor(frame.to_ndarray(), dtype=torch.float32, device=device))
-        audio = torch.cat(audio, dim=1) # cat along samples: [channels, total_samples]
+        audio = torch.cat(audio, dim=1)  # cat along samples: [channels, total_samples]
     except (StopIteration, av.AVError):
         audio = None
         sample_rate = None

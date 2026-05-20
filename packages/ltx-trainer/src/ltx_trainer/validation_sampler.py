@@ -4,16 +4,15 @@ This module provides a simplified validation pipeline for generating samples dur
 using the new ltx-core components (VideoLatentTools, AudioLatentTools, LatentState, etc.).
 """
 
+import math
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Literal
 
+import cv2
+import numpy as np
 import torch
 from einops import rearrange
 from torch import Tensor
-import cv2
-import numpy as np
-import math
-
 
 from ltx_core.components.diffusion_steps import EulerDiffusionStep
 from ltx_core.components.guiders import CFGGuider, STGGuider
@@ -38,14 +37,13 @@ from ltx_core.types import AudioLatentShape, LatentState, VideoLatentShape, Vide
 from ltx_trainer.progress import SamplingContext
 
 if TYPE_CHECKING:
+    from ltx_core.model.audio_vae import AudioProcessor, Vocoder
     from ltx_core.model.audio_vae import Decoder as AudioDecoder
-    from ltx_core.model.audio_vae import Vocoder
+    from ltx_core.model.audio_vae import Encoder as AudioEncoder
     from ltx_core.model.transformer import LTXModel
     from ltx_core.model.video_vae import Decoder as VideoDecoder
     from ltx_core.model.video_vae import Encoder as VideoEncoder
     from ltx_core.text_encoders.gemma import AVGemmaTextEncoderModel
-    from ltx_core.model.audio_vae import AudioProcessor
-    from ltx_core.model.audio_vae import Encoder as AudioEncoder
 
 # Video VAE scale factors (temporal, height, width)
 VIDEO_SCALE_FACTORS = (8, 32, 32)
@@ -107,9 +105,13 @@ class GenerationConfig:
     # Tiled decoding config: None = use defaults (enabled), False = disable, or TiledDecodingConfig for custom settings
     tiled_decoding: TiledDecodingConfig | Literal[False] | None = None
 
-    enable_cross_attention_masking: bool = False # for limiting cross-attention between video target and audio reference
+    enable_cross_attention_masking: bool = (
+        False  # for limiting cross-attention between video target and audio reference
+    )
     reference_audio: dict[str, torch.Tensor | int] | None = None
-    include_diff_with_reference_in_output: bool = False  # For IC-LoRA: concatenate difference in pixel space between reference and generated output
+    include_diff_with_reference_in_output: bool = (
+        False  # For IC-LoRA: concatenate difference in pixel space between reference and generated output
+    )
 
     def __post_init__(self) -> None:
         """Apply default tiled decoding config if not provided."""
@@ -348,8 +350,10 @@ class ValidationSampler:
             audio_output = self._decode_audio(audio_state, device)
 
         return video_output, audio_output
-    
-    def _generate_with_reference_av(self, config: GenerationConfig, device: torch.device) -> tuple[Tensor, Tensor | None]:
+
+    def _generate_with_reference_av(
+        self, config: GenerationConfig, device: torch.device
+    ) -> tuple[Tensor, Tensor | None]:
         """Generate with reference video & audio conditioning (IC-LoRA style).
 
         For IC-LoRA with video & audio:
@@ -396,13 +400,21 @@ class ValidationSampler:
 
         # Preprocess and encode reference audio
         ref_audio_preprocessed = self._preprocess_reference_audio(config)
-        ref_audio_latent, ref_audio_positions, unpatchified_ref_audio_shape = self._encode_audio(ref_audio_preprocessed, device=device)
+        ref_audio_latent, ref_audio_positions, unpatchified_ref_audio_shape = self._encode_audio(
+            ref_audio_preprocessed, device=device
+        )
         ref_audio_seq_len = ref_audio_latent.shape[1]
         ref_audio_denoise_mask = torch.zeros(1, ref_audio_seq_len, 1, device=device, dtype=torch.float32)
 
         # Create audio state if needed
-        audio_tools = self._create_audio_latent_tools(config, reference_shape=unpatchified_ref_audio_shape) if config.generate_audio else None
-        audio_clean_state = audio_tools.create_initial_state(device=device, dtype=torch.bfloat16) if audio_tools else None
+        audio_tools = (
+            self._create_audio_latent_tools(config, reference_shape=unpatchified_ref_audio_shape)
+            if config.generate_audio
+            else None
+        )
+        audio_clean_state = (
+            audio_tools.create_initial_state(device=device, dtype=torch.bfloat16) if audio_tools else None
+        )
 
         # create combined audio state (reference + target)
         combined_audio_clean_state = LatentState(
@@ -432,7 +444,9 @@ class ValidationSampler:
         video_output = self._decode_video_latent(target_latent, config, device)
 
         # Optionally concatenate original reference video side-by-side
-        assert not (config.include_reference_in_output and config.include_diff_with_reference_in_output), "Cannot include both reference and diff with reference in output"
+        assert not (config.include_reference_in_output and config.include_diff_with_reference_in_output), (
+            "Cannot include both reference and diff with reference in output"
+        )
         if config.include_reference_in_output:
             # Use preprocessed reference (already resized/cropped, in pixel space)
             # Convert from [B, C, F, H, W] to [C, F, H, W]
@@ -478,7 +492,9 @@ class ValidationSampler:
             causal_fix=True,
         )
 
-    def _create_audio_latent_tools(self, config: GenerationConfig, reference_shape: torch.Size | None = None) -> AudioLatentTools:
+    def _create_audio_latent_tools(
+        self, config: GenerationConfig, reference_shape: torch.Size | None = None
+    ) -> AudioLatentTools:
         """Create audio latent tools for the given configuration."""
         if reference_shape:
             return AudioLatentTools(
@@ -602,7 +618,7 @@ class ValidationSampler:
     @staticmethod
     def _preprocess_reference_audio(config: GenerationConfig) -> dict[str, torch.Tensor | int]:
         # calculate valid frames based on reference video
-        ref_video = config.reference_video # [f, c, h, w]
+        ref_video = config.reference_video  # [f, c, h, w]
         valid_frames = (ref_video.shape[0] - 1) // 8 * 8 + 1
         valid_duration = valid_frames / config.frame_rate
 
@@ -615,14 +631,12 @@ class ValidationSampler:
         valid_samples = int(valid_duration * sample_rate)
         if current_samples > valid_samples:
             waveform = waveform[..., :valid_samples]
-            print(f"Trimmed audio from {current_samples} to {valid_samples} samples")
         elif current_samples < valid_samples:
             padding = valid_samples - current_samples
             waveform = torch.nn.functional.pad(waveform, (0, padding))
-            print(f"Padded audio from {current_samples} to {valid_samples} samples")
 
         return {"waveform": waveform, "sample_rate": sample_rate}
-    
+
     def _encode_audio(
         self,
         audio_data: dict[str, Tensor | int],
@@ -672,7 +686,7 @@ class ValidationSampler:
         positions = positions.to(torch.bfloat16)
 
         return patchified_audio_latents, positions, audio_latents.shape
-    
+
     @staticmethod
     def _preprare_cross_attention_mask(
         video_state: LatentState,
@@ -692,13 +706,13 @@ class ValidationSampler:
         v2a_cross_attention_mask = torch.where(
             v2a_cross_attention_mask == 1,
             torch.tensor(0.0, dtype=torch.float32),
-            torch.tensor(float('-inf'), dtype=torch.float32)
+            torch.tensor(float("-inf"), dtype=torch.float32),
         ).to(device)
 
         a2v_cross_attention_mask = torch.where(
             a2v_cross_attention_mask == 1,
             torch.tensor(0.0, dtype=torch.float32),
-            torch.tensor(float('-inf'), dtype=torch.float32)
+            torch.tensor(float("-inf"), dtype=torch.float32),
         ).to(device)
 
         return v2a_cross_attention_mask, a2v_cross_attention_mask
@@ -727,7 +741,9 @@ class ValidationSampler:
         stg_perturbation_config = self._build_stg_perturbation_config(config) if stg_guider.enabled() else None
 
         if config.enable_cross_attention_masking:
-            v2a_cross_attention_mask, a2v_cross_attention_mask = self._preprare_cross_attention_mask(video_state, audio_state, device)
+            v2a_cross_attention_mask, a2v_cross_attention_mask = self._preprare_cross_attention_mask(
+                video_state, audio_state, device
+            )
         else:
             v2a_cross_attention_mask = None
             a2v_cross_attention_mask = None
@@ -1043,7 +1059,7 @@ class ValidationSampler:
         # [C, F, H, W] -> [F, H, W, C]
         ref_np = ref_video.cpu().permute(1, 2, 3, 0).numpy()
         gen_np = gen_video.cpu().permute(1, 2, 3, 0).numpy()
-        
+
         diff_frames = []
         # Kernel for 'Closing' helps connect the thin lines of the lip edges
         kernel = np.ones((3, 3), np.uint8)
@@ -1052,27 +1068,27 @@ class ValidationSampler:
             # 1. Grayscale conversion: Strips all color information
             ref_gray = cv2.cvtColor((ref_np[i] * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
             gen_gray = cv2.cvtColor((gen_np[i] * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
-            
+
             # 2. Extract Gradients (Edges) using Sobel
             # This highlights the 'structure' of the mouth
             grad_ref = cv2.Sobel(ref_gray, cv2.CV_64F, 1, 1, ksize=3)
             grad_gen = cv2.Sobel(gen_gray, cv2.CV_64F, 1, 1, ksize=3)
-            
+
             # 3. Structural Delta: Where do the edges not align?
             struct_diff = np.abs(grad_ref - grad_gen)
-            
+
             # 4. Aggressive Noise Gate: Keep only the top 0.5% of structural changes
             # Since lips are a small part of the frame, they will dominate this percentile
-            threshold = np.percentile(struct_diff, 99.5) 
+            threshold = np.percentile(struct_diff, 99.5)
             diff_mask = np.where(struct_diff > threshold, struct_diff, 0).astype(np.float32)
-            
+
             # 5. Morphological Closing: Joins the edges of the lips into a visible shape
             cleaned_diff = cv2.morphologyEx(diff_mask, cv2.MORPH_CLOSE, kernel)
-            
+
             # 6. Normalize
             if cleaned_diff.max() > 0:
                 cleaned_diff = cleaned_diff / cleaned_diff.max()
-            
+
             # Convert back to 3 channels for concatenation
             diff_frames.append(np.stack([cleaned_diff] * 3, axis=-1))
 

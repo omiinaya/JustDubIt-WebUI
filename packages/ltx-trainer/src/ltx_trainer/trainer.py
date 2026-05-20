@@ -41,7 +41,7 @@ from ltx_trainer.timestep_samplers import SAMPLERS
 from ltx_trainer.training_strategies import get_training_strategy
 from ltx_trainer.utils import get_gpu_memory_gb, open_image_as_srgb
 from ltx_trainer.validation_sampler import CachedPromptEmbeddings, GenerationConfig, ValidationSampler
-from ltx_trainer.video_utils import read_video, save_video, read_audio
+from ltx_trainer.video_utils import read_audio, read_video, save_video
 
 # Disable irrelevant warnings from transformers
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
@@ -659,10 +659,8 @@ class LtxvTrainer:
             optimizer_params = [g for g in param_groups if g["params"]]
 
             for i, group in enumerate(optimizer_params):
-                logger.info(
-                    f"Optimizer group {i}: lr={group['lr']}, params={len(group['params'])}"
-                )
-                # logger.debug(f"Group {i} parameter names: {group['names']}")
+                logger.info(f"Optimizer group {i}: lr={group['lr']}, params={len(group['params'])}")
+                # logger.debug(f"Group {i} parameter names: {group['names']}")  # noqa: ERA001
         else:
             optimizer_params = self._trainable_params
 
@@ -680,9 +678,7 @@ class LtxvTrainer:
         lr_scheduler = self._create_scheduler(optimizer)
 
         # noinspection PyTypeChecker
-        self._optimizer, self._lr_scheduler = self._accelerator.prepare(
-            optimizer, lr_scheduler
-        )
+        self._optimizer, self._lr_scheduler = self._accelerator.prepare(optimizer, lr_scheduler)
 
     def _create_scheduler(self, optimizer: torch.optim.Optimizer) -> LRScheduler | None:
         """Create learning rate scheduler based on config."""
@@ -834,7 +830,7 @@ class LtxvTrainer:
                 ref_video_path = self._config.validation.reference_videos[prompt_idx]
                 # read_video returns [F, C, H, W] in [0, 1]
                 reference_video, _ = read_video(ref_video_path, max_frames=num_frames)
-            
+
             # Load reference audio from reference video
             reference_audio = None
             if generate_audio and use_reference_videos:

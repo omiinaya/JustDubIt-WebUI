@@ -13,7 +13,6 @@ import torch
 from pydantic import BaseModel, ConfigDict, Field
 from torch import Tensor
 
-from ltx_core.model.transformer.modality import Modality
 from ltx_core.components.patchifiers import (
     AudioLatentShape,
     AudioPatchifier,
@@ -21,6 +20,7 @@ from ltx_core.components.patchifiers import (
     VideoLatentShape,
     get_pixel_coords,
 )
+from ltx_core.model.transformer.modality import Modality
 from ltx_trainer.timestep_samplers import TimestepSampler
 
 # Default frames per second for video missing in the FPS metadata
@@ -55,7 +55,7 @@ class ModelInputs:
     audio_targets: Tensor | None
 
     # Masks for loss computation
-    video_loss_mask: Tensor # Boolean mask: True = compute loss for this token
+    video_loss_mask: Tensor  # Boolean mask: True = compute loss for this token
     audio_loss_mask: Tensor | None
 
     # Metadata needed for loss computation in some strategies
@@ -64,6 +64,7 @@ class ModelInputs:
 
     # Mask information
     foreground_masks: Tensor | None = None  # Boolean or float mask: True/1.0 = foreground, False/0.0 = background
+
 
 class TrainingStrategy(ABC):
     """Abstract base class for training strategies.

@@ -351,8 +351,12 @@ def simple_denoising_func(
         video_state: LatentState, audio_state: LatentState, sigmas: torch.Tensor, step_index: int
     ) -> tuple[torch.Tensor, torch.Tensor]:
         sigma = sigmas[step_index]
-        pos_video = modality_from_latent_state(video_state, video_context, sigma, cross_attention_mask=a2v_cross_attention_mask)
-        pos_audio = modality_from_latent_state(audio_state, audio_context, sigma, cross_attention_mask=v2a_cross_attention_mask)
+        pos_video = modality_from_latent_state(
+            video_state, video_context, sigma, cross_attention_mask=a2v_cross_attention_mask
+        )
+        pos_audio = modality_from_latent_state(
+            audio_state, audio_context, sigma, cross_attention_mask=v2a_cross_attention_mask
+        )
 
         denoised_video, denoised_audio = transformer(video=pos_video, audio=pos_audio, perturbations=None)
         return denoised_video, denoised_audio
@@ -374,13 +378,21 @@ def guider_denoising_func(
         video_state: LatentState, audio_state: LatentState, sigmas: torch.Tensor, step_index: int
     ) -> tuple[torch.Tensor, torch.Tensor]:
         sigma = sigmas[step_index]
-        pos_video = modality_from_latent_state(video_state, v_context_p, sigma, cross_attention_mask=a2v_cross_attention_mask)
-        pos_audio = modality_from_latent_state(audio_state, a_context_p, sigma, cross_attention_mask=v2a_cross_attention_mask)
+        pos_video = modality_from_latent_state(
+            video_state, v_context_p, sigma, cross_attention_mask=a2v_cross_attention_mask
+        )
+        pos_audio = modality_from_latent_state(
+            audio_state, a_context_p, sigma, cross_attention_mask=v2a_cross_attention_mask
+        )
 
         denoised_video, denoised_audio = transformer(video=pos_video, audio=pos_audio, perturbations=None)
         if guider.enabled():
-            neg_video = modality_from_latent_state(video_state, v_context_n, sigma, cross_attention_mask=a2v_cross_attention_mask)
-            neg_audio = modality_from_latent_state(audio_state, a_context_n, sigma, cross_attention_mask=v2a_cross_attention_mask)
+            neg_video = modality_from_latent_state(
+                video_state, v_context_n, sigma, cross_attention_mask=a2v_cross_attention_mask
+            )
+            neg_audio = modality_from_latent_state(
+                audio_state, a_context_n, sigma, cross_attention_mask=v2a_cross_attention_mask
+            )
 
             neg_denoised_video, neg_denoised_audio = transformer(video=neg_video, audio=neg_audio, perturbations=None)
 
@@ -413,7 +425,6 @@ def denoise_audio_video(  # noqa: PLR0913
     initial_audio_latent: torch.Tensor | None = None,
     audio_conditionings: list[ConditioningItem] | None = None,
     audio_latent_shape: AudioLatentShape | None = None,
-    
 ) -> tuple[LatentState, LatentState]:
     video_state, video_tools = noise_video_state(
         output_shape=output_shape,

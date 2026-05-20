@@ -24,6 +24,7 @@ import pandas as pd
 import torch
 import torchaudio
 import typer
+from einops import rearrange
 from pillow_heif import register_heif_opener
 from rich.console import Console
 from rich.progress import (
@@ -41,7 +42,6 @@ from torchvision import transforms
 from torchvision.transforms import InterpolationMode
 from torchvision.transforms.functional import crop, resize, to_tensor
 from transformers.utils.logging import disable_progress_bar
-from einops import rearrange
 
 from ltx_core.model.audio_vae import AudioProcessor
 from ltx_trainer import logger
@@ -432,6 +432,7 @@ class MediaDataset(Dataset):
         media_tensor = crop(media_tensor, top=top, left=left, height=target_height, width=target_width)
         return media_tensor
 
+
 class MaskDataset(MediaDataset):
     """
     Dataset for processing mask video files, inheriting from MediaDataset.
@@ -533,7 +534,7 @@ class MaskDataset(MediaDataset):
         # If all retries failed, raise an error
         logger.error(f"Failed to load any valid mask after {max_retries} attempts starting from index {index}")
         raise RuntimeError(f"Could not load any valid mask sample after {max_retries} attempts")
-    
+
     def _preprocess_mask(self, path: Path) -> torch.Tensor:
         """Preprocess a mask video by loading, resizing, and converting to latent dimensions."""
         mask_tensor, _ = self._preprocess_video(path)
@@ -610,10 +611,12 @@ class MaskDataset(MediaDataset):
         # Combine first frame with reduced frames
         return torch.cat([first_frame, remaining_frames], dim=0)
 
+
 def decode_masks_folder(masks_dir: Path, output_dir: Path) -> None:
     """Decode masks from latent dimensions back to target resolution."""
-    from fractions import Fraction
-    import torchvision
+    from fractions import Fraction  # noqa: PLC0415
+
+    import torchvision  # noqa: PLC0415
 
     console = Console()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -722,6 +725,7 @@ def decode_mask(
         # Only first frame
         return first_frame
 
+
 def compute_mask_latents(
     dataset_file: str | Path,
     mask_column: str,
@@ -743,8 +747,8 @@ def compute_mask_latents(
         batch_size: Batch size for processing
         override: Whether to override existing mask files
     """
-    from rich.console import Console
-    from rich.progress import (
+    from rich.console import Console  # noqa: PLC0415
+    from rich.progress import (  # noqa: PLC0415
         BarColumn,
         MofNCompleteColumn,
         Progress,
@@ -754,7 +758,7 @@ def compute_mask_latents(
         TimeElapsedColumn,
         TimeRemainingColumn,
     )
-    from torch.utils.data import DataLoader
+    from torch.utils.data import DataLoader  # noqa: PLC0415
 
     console = Console()
 
@@ -823,6 +827,7 @@ def compute_mask_latents(
             progress.advance(task)
 
     logger.info(f"Processed {len(dataset)} mask videos. Masks saved to {output_path}")
+
 
 def compute_latents(  # noqa: PLR0913, PLR0915
     dataset_file: str | Path,
@@ -1106,34 +1111,34 @@ def encode_audio(
 
 def parse_resolution_buckets(resolution_buckets_str: str) -> list[tuple[int, int, int]]:
     """Parse resolution buckets from string format to list of tuples (frames, height, width).
-    
+
     Supports two formats:
     - WxHxF: Fixed frame count (e.g., "768x768x25")
     - WxH: Dynamic frame count - expands to multiple buckets with frames 1, 9, 17, ..., 513
            to automatically select the best fit (1+8*N) for each video
     """
     # Maximum frames for dynamic mode: 513 = 1 + 8*64, covers ~20s at 25fps
-    MAX_DYNAMIC_FRAMES = 513
-    
+    MAX_DYNAMIC_FRAMES = 513  # noqa: N806
+
     resolution_buckets = []
     for bucket_str in resolution_buckets_str.split(";"):
         parts = bucket_str.split("x")
-        
+
         if len(parts) == 2:
             # WxH format - expand to multiple frame options
             w, h = map(int, parts)
-            
+
             if w % VAE_SPATIAL_FACTOR != 0 or h % VAE_SPATIAL_FACTOR != 0:
                 raise typer.BadParameter(
                     f"Width and height must be multiples of {VAE_SPATIAL_FACTOR}, got {w}x{h}",
                     param_hint="resolution-buckets",
                 )
-            
+
             # Generate all valid frame counts: 1, 9, 17, ..., up to MAX_DYNAMIC_FRAMES
             for n in range((MAX_DYNAMIC_FRAMES - 1) // VAE_TEMPORAL_FACTOR + 1):
                 f = 1 + VAE_TEMPORAL_FACTOR * n
                 resolution_buckets.append((f, h, w))
-                
+
         elif len(parts) == 3:
             # WxHxF format - fixed frame count
             w, h, f = map(int, parts)
@@ -1156,7 +1161,7 @@ def parse_resolution_buckets(resolution_buckets_str: str) -> list[tuple[int, int
                 f"Invalid resolution bucket format: '{bucket_str}'. Expected 'WxH' or 'WxHxF'",
                 param_hint="resolution-buckets",
             )
-    
+
     return resolution_buckets
 
 

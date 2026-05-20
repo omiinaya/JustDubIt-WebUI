@@ -112,10 +112,8 @@ class JustDubitPipeline:
         device: str = utils.get_device(),
         fp8transformer: bool = False,
     ):
-        print("[JustDubit] Initializing pipeline...")
         self.device = device
         self.dtype = torch.bfloat16
-        print("[JustDubit] Loading model ledger...")
         self.stage_1_model_ledger = ModelLedger(
             dtype=self.dtype,
             device=device,
@@ -140,7 +138,6 @@ class JustDubitPipeline:
             dtype=self.dtype,
             device=device,
         )
-        print("[JustDubit] Pipeline initialized successfully.")
 
     @torch.inference_mode()
     def __call__(  # noqa: PLR0913
@@ -158,14 +155,12 @@ class JustDubitPipeline:
         video_conditioning: list[tuple[str, float]],
         tiling_config: TilingConfig | None = None,
     ) -> tuple[Iterator[torch.Tensor], torch.Tensor]:
-        print(f"[JustDubit] Starting generation (seed={seed}, {width}x{height}, {num_frames} frames)...")
         generator = torch.Generator(device=self.device).manual_seed(seed)
         noiser = GaussianNoiser(generator=generator)
         stepper = EulerDiffusionStep()
         cfg_guider = CFGGuider(cfg_guidance_scale)
         dtype = torch.bfloat16
 
-        print("[JustDubit] Loading text encoder and encoding prompts...")
         text_encoder = self.stage_1_model_ledger.text_encoder()
         context_p, context_n = encode_text(text_encoder, prompts=[prompt, negative_prompt])
         v_context_p, a_context_p = context_p
@@ -176,14 +171,12 @@ class JustDubitPipeline:
         utils.cleanup_memory()
 
         # Stage 1: Initial video and audio generation
-        print("[JustDubit] Stage 1: Loading video encoder, audio encoder, and transformer... (it may take a few minutes for the first run)")
         video_encoder = self.stage_1_model_ledger.video_encoder()
         audio_encoder = self.stage_1_model_ledger.audio_encoder()
         transformer = self.stage_1_model_ledger.transformer()
         sigmas = LTX2Scheduler().execute(steps=num_inference_steps).to(dtype=torch.float32, device=self.device)
 
         # Get conditioning and determine final num_frames from source video
-        print("[JustDubit] Stage 1: Encoding video conditioning...")
         stage_1_video_conditionings, determined_num_frames = self._create_video_conditionings(
             images=images,
             video_conditioning=video_conditioning,
@@ -196,7 +189,6 @@ class JustDubitPipeline:
         # Use determined_num_frames if conditioning was present, otherwise fallback to input
         num_frames = determined_num_frames if determined_num_frames > 0 else num_frames
 
-        print("[JustDubit] Stage 1: Encoding audio conditioning...")
         stage_1_audio_conditionings, audio_latent_shape = self._create_audio_conditionings(
             video_conditioning=video_conditioning,
             audio_encoder=audio_encoder,
@@ -233,7 +225,6 @@ class JustDubitPipeline:
                 ),
             )
 
-        print(f"[JustDubit] Stage 1: Denoising video and audio ({num_inference_steps} steps)...")
         video_state, audio_state = denoise_audio_video(
             output_shape=stage_1_output_shape,
             conditionings=stage_1_video_conditionings,
@@ -247,7 +238,6 @@ class JustDubitPipeline:
             dtype=dtype,
             device=self.device,
         )
-        print("[JustDubit] Stage 1: Denoising complete.")
 
         torch.cuda.synchronize()
         del stage_1_audio_conditionings
@@ -257,7 +247,6 @@ class JustDubitPipeline:
         utils.cleanup_memory()
 
         # Stage 2: Upsample and refine the video at higher resolution with distilled LoRA
-        print("[JustDubit] Stage 2: Upsampling video latent (2x)...")
         upscaled_video_latent = utils.upsample_video(
             latent=video_state.latent[:1],
             video_encoder=video_encoder,
@@ -267,9 +256,8 @@ class JustDubitPipeline:
         torch.cuda.synchronize()
         utils.cleanup_memory()
 
-        print("[JustDubit] Stage 2: Loading distilled transformer...")
         transformer = self.stage_2_model_ledger.transformer()
-        distilled_sigmas = torch.Tensor(STAGE_2_DISTILLED_SIGMA_VALUES).to(self.device)[1:] # remove first sigma
+        distilled_sigmas = torch.Tensor(STAGE_2_DISTILLED_SIGMA_VALUES).to(self.device)[1:]  # remove first sigma
 
         def second_stage_denoising_loop(
             sigmas: torch.Tensor,
@@ -303,7 +291,6 @@ class JustDubitPipeline:
             batch=1, frames=num_frames, width=width * 2, height=height * 2, fps=frame_rate
         )
 
-        print("[JustDubit] Stage 2: Encoding conditioning at higher resolution...")
         stage_2_conditionings, _ = self._create_video_conditionings(
             images=images,
             video_conditioning=video_conditioning,
@@ -313,7 +300,6 @@ class JustDubitPipeline:
             tiling_config=tiling_config,
         )
 
-        print(f"[JustDubit] Stage 2: Refining video ({len(distilled_sigmas)} steps)...")
         video_state, audio_state = denoise_audio_video(
             output_shape=stage_2_output_shape,
             conditionings=stage_2_conditionings,
@@ -329,21 +315,17 @@ class JustDubitPipeline:
             initial_audio_latent=audio_state.latent,
             audio_latent_shape=audio_latent_shape,
         )
-        print("[JustDubit] Stage 2: Refinement complete.")
 
         torch.cuda.synchronize()
         del transformer
         del video_encoder
         utils.cleanup_memory()
 
-        print("[JustDubit] Decoding video...")
         decoded_video = vae_decode_video(video_state, self.stage_2_model_ledger.video_decoder(), tiling_config)
-        print("[JustDubit] Decoding audio...")
         decoded_audio = vae_decode_audio(
             audio_state, self.stage_2_model_ledger.audio_decoder(), self.stage_2_model_ledger.vocoder()
         )
 
-        print("[JustDubit] Generation complete!")
         return decoded_video, decoded_audio
 
     def _create_video_conditionings(
@@ -499,7 +481,7 @@ def main() -> None:
     ]
 
     # Extract first frame from video conditioning for image conditioning
-    images = list()
+    images = []
     if args.video_conditioning:
         first_video_path, strength = args.video_conditioning[0]
         first_frame_path = extract_first_frame(first_video_path)
@@ -530,7 +512,6 @@ def main() -> None:
         tiling_config=TilingConfig.default(),
     )
 
-    print(f"[JustDubit] Saving video to {args.output_path}...")
     encode_video(
         video=video,
         fps=args.frame_rate,
@@ -538,7 +519,6 @@ def main() -> None:
         audio_sample_rate=AUDIO_SAMPLE_RATE,
         output_path=args.output_path,
     )
-    print(f"[JustDubit] Done!")
 
 
 if __name__ == "__main__":

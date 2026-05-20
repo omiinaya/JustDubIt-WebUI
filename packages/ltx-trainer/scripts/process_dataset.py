@@ -19,7 +19,7 @@ from pathlib import Path
 import typer
 from decode_latents import LatentsDecoder
 from process_captions import compute_captions_embeddings
-from process_videos import compute_latents, parse_resolution_buckets, compute_mask_latents, decode_masks_folder
+from process_videos import compute_latents, compute_mask_latents, decode_masks_folder, parse_resolution_buckets
 from rich.console import Console
 
 from ltx_trainer import logger
@@ -33,7 +33,7 @@ app = typer.Typer(
 )
 
 
-def preprocess_dataset(  # noqa: PLR0913
+def preprocess_dataset(  # noqa: PLR0912, PLR0913, PLR0915
     dataset_file: str,
     caption_column: str,
     video_column: str,
@@ -119,7 +119,7 @@ def preprocess_dataset(  # noqa: PLR0913
             with_audio=with_audio,
             audio_output_dir=str(reference_audio_latents_dir) if reference_audio_latents_dir else None,
         )
-    
+
     if mask_column:
         logger.info("Processing mask latents...")
         mask_latents_dir = output_base / "masks"

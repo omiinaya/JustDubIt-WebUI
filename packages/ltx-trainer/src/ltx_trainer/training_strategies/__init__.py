@@ -15,20 +15,18 @@ from ltx_trainer.training_strategies.base_strategy import (
     TrainingStrategy,
     TrainingStrategyConfigBase,
 )
+from ltx_trainer.training_strategies.justdubit import JustDubItConfig, JustDubItStrategy
 from ltx_trainer.training_strategies.text_to_video import TextToVideoConfig, TextToVideoStrategy
 from ltx_trainer.training_strategies.video_to_video import VideoToVideoConfig, VideoToVideoStrategy
-from ltx_trainer.training_strategies.justdubit import JustDubItConfig, JustDubItStrategy
 
 # Type alias for all strategy config types
-TrainingStrategyConfig = (
-    TextToVideoConfig
-    | VideoToVideoConfig
-    | JustDubItConfig
-)
+TrainingStrategyConfig = TextToVideoConfig | VideoToVideoConfig | JustDubItConfig
 
 __all__ = [
     "DEFAULT_FPS",
     "VIDEO_SCALE_FACTORS",
+    "JustDubItConfig",
+    "JustDubItStrategy",
     "ModelInputs",
     "TextToVideoConfig",
     "TextToVideoStrategy",
@@ -37,8 +35,6 @@ __all__ = [
     "TrainingStrategyConfigBase",
     "VideoToVideoConfig",
     "VideoToVideoStrategy",
-    "JustDubItConfig",
-    "JustDubItStrategy",
     "get_training_strategy",
 ]
 
@@ -66,9 +62,7 @@ def get_training_strategy(config: TrainingStrategyConfig) -> TrainingStrategy:
         case JustDubItConfig():
             strategy = JustDubItStrategy(config)
         case _:
-            raise ValueError(
-                f"Unknown training strategy config type: {type(config).__name__}"
-            )
+            raise ValueError(f"Unknown training strategy config type: {type(config).__name__}")
 
     audio_mode = "(audio enabled 🔈)" if getattr(config, "with_audio", False) else "(audio disabled 🔇)"
     logger.debug(f"🎯 Using {strategy.__class__.__name__} training strategy {audio_mode}")

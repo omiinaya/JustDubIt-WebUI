@@ -10,8 +10,8 @@ from pathlib import Path
 import av
 import numpy as np
 import torch
-from torch import Tensor
 import torchaudio
+from torch import Tensor
 
 
 def get_video_frame_count(video_path: str | Path) -> int:
@@ -56,6 +56,7 @@ def read_video(video_path: str | Path, max_frames: int | None = None) -> tuple[T
     video = torch.from_numpy(frames_np).float().div(255.0)  # [F, H, W, C] in [0, 1]
     return video.permute(0, 3, 1, 2), fps  # [F, C, H, W]
 
+
 def read_audio(video_path: Path, target_duration: float) -> dict[str, torch.Tensor | int]:
     """Extract audio track from a video file, trimmed to match video duration."""
     # torchaudio can extract audio from video files directly
@@ -69,14 +70,13 @@ def read_audio(video_path: Path, target_duration: float) -> dict[str, torch.Tens
     if current_samples > target_samples:
         # Trim to target duration
         waveform = waveform[..., :target_samples]
-        print(f"Trimmed audio from {current_samples} to {target_samples} samples")
     elif current_samples < target_samples:
         # Pad with zeros to target duration
         padding = target_samples - current_samples
         waveform = torch.nn.functional.pad(waveform, (0, padding))
-        print(f"Padded audio from {current_samples} to {target_samples} samples")
 
     return {"waveform": waveform, "sample_rate": sample_rate}
+
 
 def save_video(
     video_tensor: torch.Tensor,

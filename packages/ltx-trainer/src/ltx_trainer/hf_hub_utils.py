@@ -131,7 +131,7 @@ def _create_model_card(
     is_url = model_path_str.startswith(("http://", "https://"))
 
     # For URLs, extract the filename from the URL. For local paths, use the filename stem
-    base_model_name = model_path_str.split("/")[-1] if is_url else Path(pretrained_model_name_or_path).name
+    base_model_name = model_path_str.rsplit("/", maxsplit=1)[-1] if is_url else Path(pretrained_model_name_or_path).name
 
     # Format validation prompts and create grid layout
     prompts_text = ""

@@ -5,9 +5,9 @@ from pydantic import BaseModel, ConfigDict, Discriminator, Field, Tag, Validatio
 
 from ltx_trainer.quantization import QuantizationOptions
 from ltx_trainer.training_strategies.base_strategy import TrainingStrategyConfigBase
+from ltx_trainer.training_strategies.justdubit import JustDubItConfig
 from ltx_trainer.training_strategies.text_to_video import TextToVideoConfig
 from ltx_trainer.training_strategies.video_to_video import VideoToVideoConfig
-from ltx_trainer.training_strategies.justdubit import JustDubItConfig
 
 
 class ConfigBaseModel(BaseModel):

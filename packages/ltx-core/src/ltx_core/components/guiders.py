@@ -1,6 +1,6 @@
+import math
 from dataclasses import dataclass
 
-import math
 import torch
 
 from ltx_core.components.protocols import GuiderProtocol

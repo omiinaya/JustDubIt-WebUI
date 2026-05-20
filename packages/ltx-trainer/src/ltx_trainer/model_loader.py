@@ -31,15 +31,14 @@ Device = str | torch.device
 
 # Type checking imports (not loaded at runtime)
 if TYPE_CHECKING:
+    from ltx_core.components.schedulers import LTX2Scheduler
+    from ltx_core.model.audio_vae import AudioProcessor, Vocoder
     from ltx_core.model.audio_vae import Decoder as AudioVAEDecoder
     from ltx_core.model.audio_vae import Encoder as AudioVAEEncoder
-    from ltx_core.model.audio_vae import AudioProcessor
-    from ltx_core.model.audio_vae import Vocoder
-    from ltx_core.text_encoders.gemma import AVGemmaTextEncoderModel
     from ltx_core.model.transformer.model import LTXModel
     from ltx_core.model.video_vae.video_vae import Decoder as VideoVAEDecoder
     from ltx_core.model.video_vae.video_vae import Encoder as VideoVAEEncoder
-    from ltx_core.components.schedulers import LTX2Scheduler
+    from ltx_core.text_encoders.gemma import AVGemmaTextEncoderModel
 
 
 def _to_torch_device(device: Device) -> torch.device:
@@ -267,7 +266,7 @@ class LtxModelComponents:
     scheduler: "LTX2Scheduler | None" = None
 
 
-def load_model(
+def load_model(  # noqa: PLR0913
     checkpoint_path: str | Path,
     text_encoder_path: str | Path | None = None,
     device: Device = "cpu",

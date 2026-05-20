@@ -7,13 +7,12 @@ This strategy implements audio-video generation training for dubbing where:
 - Joint audio-video training with cross-attention masking support
 """
 
-from typing import Any, Literal
 from dataclasses import replace
+from typing import Any, Literal
 
 import torch
 from pydantic import Field
 from torch import Tensor
-
 
 from ltx_core.model.transformer.modality import Modality
 from ltx_trainer import logger
@@ -115,8 +114,8 @@ class JustDubItStrategy(TrainingStrategy):
             self.config.reference_latents_dir: "ref_latents",
             self.config.reference_audio_latents_dir: "ref_audio_latents",
         }
-        if self.config.mask_config['use_masked_loss'] and self.config.mask_config['mask_dir'] is not None:
-            sources[self.config.mask_config['mask_dir']] = "masks"
+        if self.config.mask_config["use_masked_loss"] and self.config.mask_config["mask_dir"] is not None:
+            sources[self.config.mask_config["mask_dir"]] = "masks"
 
         return sources
 
@@ -129,14 +128,20 @@ class JustDubItStrategy(TrainingStrategy):
         device: torch.device,
     ) -> tuple[Tensor, Tensor]:
         """Prepare cross-attention mask for video and audio, return cross-attention masks"""
-        video_mask = torch.cat([
-            torch.zeros(ref_video_len, dtype=torch.bool, device=device),
-            torch.ones(target_video_len, dtype=torch.bool, device=device),
-        ], dim=0)
-        audio_mask = torch.cat([
-            torch.zeros(ref_audio_len, dtype=torch.bool, device=device),
-            torch.ones(target_audio_len, dtype=torch.bool, device=device),
-        ], dim=0)
+        video_mask = torch.cat(
+            [
+                torch.zeros(ref_video_len, dtype=torch.bool, device=device),
+                torch.ones(target_video_len, dtype=torch.bool, device=device),
+            ],
+            dim=0,
+        )
+        audio_mask = torch.cat(
+            [
+                torch.zeros(ref_audio_len, dtype=torch.bool, device=device),
+                torch.ones(target_audio_len, dtype=torch.bool, device=device),
+            ],
+            dim=0,
+        )
 
         v2a_cross_attention_mask = audio_mask.unsqueeze(-1) * video_mask.unsqueeze(0)
         a2v_cross_attention_mask = v2a_cross_attention_mask.T
@@ -144,20 +149,19 @@ class JustDubItStrategy(TrainingStrategy):
         v2a_cross_attention_mask = torch.where(
             v2a_cross_attention_mask == 1,
             torch.tensor(0.0, dtype=torch.float32),
-            torch.tensor(float('-inf'), dtype=torch.float32)
+            torch.tensor(float("-inf"), dtype=torch.float32),
         ).to(device)
 
         a2v_cross_attention_mask = torch.where(
             a2v_cross_attention_mask == 1,
             torch.tensor(0.0, dtype=torch.float32),
-            torch.tensor(float('-inf'), dtype=torch.float32)
+            torch.tensor(float("-inf"), dtype=torch.float32),
         ).to(device)
 
         return v2a_cross_attention_mask, a2v_cross_attention_mask
-    
+
     def _prepare_masks_for_target(
-        self,
-        mask_data: dict[str, Tensor], target_shape: torch.Size, device: torch.device
+        self, mask_data: dict[str, Tensor], target_shape: torch.Size, device: torch.device
     ) -> Tensor:
         """
         Process masks for the target sequence.
@@ -174,15 +178,15 @@ class JustDubItStrategy(TrainingStrategy):
         target_seq_len = target_shape[1]
 
         # Convert to binary masks if needed
-        if not self.config.mask_config['use_soft_masks'] and masks.dtype != torch.bool:
-            masks = masks > self.config.mask_config['mask_threshold']
+        if not self.config.mask_config["use_soft_masks"] and masks.dtype != torch.bool:
+            masks = masks > self.config.mask_config["mask_threshold"]
 
         # Map to target sequence tokens - flatten spatial dimensions and truncate to target length
         sequence_masks = masks.flatten(1)  # [B, T*H*W]
 
         return sequence_masks[:, :target_seq_len]
 
-    def prepare_training_inputs(
+    def prepare_training_inputs(  # noqa: PLR0915
         self,
         batch: dict[str, Any],
         timestep_sampler: TimestepSampler,
@@ -321,14 +325,14 @@ class JustDubItStrategy(TrainingStrategy):
             v2a_cross_attention_mask, a2v_cross_attention_mask = self._prepare_cross_attention_mask(
                 ref_video_seq_len,
                 ref_audio_seq_len,
-                video_modality.latent.shape[1]-ref_video_seq_len,
-                audio_modality.latent.shape[1]-ref_audio_seq_len,
+                video_modality.latent.shape[1] - ref_video_seq_len,
+                audio_modality.latent.shape[1] - ref_audio_seq_len,
                 device,
             )
             video_modality = replace(video_modality, cross_attention_mask=a2v_cross_attention_mask)
             audio_modality = replace(audio_modality, cross_attention_mask=v2a_cross_attention_mask)
-        
-        if self.config.mask_config['use_masked_loss']:
+
+        if self.config.mask_config["use_masked_loss"]:
             foreground_masks = self._prepare_masks_for_target(
                 mask_data=batch["masks"],
                 target_shape=video_modality.latent.shape,
@@ -389,7 +393,7 @@ class JustDubItStrategy(TrainingStrategy):
         ref_audio_conditioning_mask = torch.ones(batch_size, ref_audio_seq_len, dtype=torch.bool, device=device)
         target_audio_conditioning_mask = torch.zeros(batch_size, target_audio_seq_len, dtype=torch.bool, device=device)
         audio_conditioning_mask = torch.cat([ref_audio_conditioning_mask, target_audio_conditioning_mask], dim=1)
-        
+
         # Sample audio noise
         audio_noise = torch.randn_like(target_audio_latents)
 
@@ -439,7 +443,7 @@ class JustDubItStrategy(TrainingStrategy):
         audio_loss_mask = ~audio_conditioning_mask
 
         return audio_modality, audio_targets, audio_loss_mask, ref_audio_seq_len
-    
+
     def _compute_masked_loss(
         self,
         model_pred: Tensor,
@@ -467,18 +471,20 @@ class JustDubItStrategy(TrainingStrategy):
         foreground_loss_mask = foreground_masks.unsqueeze(-1).float()
 
         # Combine masks with weights
-        if self.config.mask_config['background_loss_weight'] > 0:
+        if self.config.mask_config["background_loss_weight"] > 0:
             # Apply different weights to foreground vs background
-            mask_thresh = self.config.mask_config['mask_threshold'] if not self.config.mask_config['use_soft_masks'] else 0.5
+            mask_thresh = (
+                self.config.mask_config["mask_threshold"] if not self.config.mask_config["use_soft_masks"] else 0.5
+            )
             mask_weights = torch.where(
                 foreground_loss_mask > mask_thresh,
-                torch.tensor(self.config.mask_config['mask_loss_weight'], device=foreground_loss_mask.device),
-                torch.tensor(self.config.mask_config['background_loss_weight'], device=foreground_loss_mask.device),
+                torch.tensor(self.config.mask_config["mask_loss_weight"], device=foreground_loss_mask.device),
+                torch.tensor(self.config.mask_config["background_loss_weight"], device=foreground_loss_mask.device),
             )
             combined_mask = conditioning_loss_mask * mask_weights
         else:
             # Only foreground loss
-            combined_mask = conditioning_loss_mask * foreground_loss_mask * self.config.mask_config['mask_loss_weight']
+            combined_mask = conditioning_loss_mask * foreground_loss_mask * self.config.mask_config["mask_loss_weight"]
 
         # Apply mask and normalize
         effective_tokens = combined_mask.sum()
@@ -489,7 +495,7 @@ class JustDubItStrategy(TrainingStrategy):
             logger.warning("No foreground tokens, using standard loss")
             loss = (
                 base_loss.mul(conditioning_loss_mask).div(conditioning_loss_mask.mean())
-                * self.config.mask_config['background_loss_weight']
+                * self.config.mask_config["background_loss_weight"]
             )
             return loss.mean()
 
@@ -508,7 +514,7 @@ class JustDubItStrategy(TrainingStrategy):
         target_video_loss_mask = inputs.video_loss_mask[:, ref_video_seq_len:]
 
         # Video loss
-        if self.config.mask_config['use_masked_loss']:
+        if self.config.mask_config["use_masked_loss"]:
             video_loss = self._compute_masked_loss(
                 model_pred=target_video_pred,
                 targets=inputs.video_targets,

@@ -32,12 +32,12 @@ Usage:
 """
 
 import argparse
+import json
 import re
 from pathlib import Path
 
 import torch
 import torchaudio
-import json
 from peft import LoraConfig, get_peft_model, set_peft_model_state_dict
 from safetensors.torch import load_file
 from torchvision import transforms
@@ -322,8 +322,10 @@ def main() -> None:  # noqa: PLR0912, PLR0915
     print("=" * 80)
 
     # Determine if we need VAE encoder (for image or video conditioning)
-    need_vae_encoder = args.condition_image is not None or args.reference_video is not None or args.input_json is not None
-    
+    need_vae_encoder = (
+        args.condition_image is not None or args.reference_video is not None or args.input_json is not None
+    )
+
     # Determine if we need audio VAE encoder (for reference audio conditioning)
     need_audio_vae_encoder = args.reference_audio
 
@@ -345,7 +347,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
     transformer = components.transformer
     if args.lora_path is not None:
         transformer = load_lora_weights(transformer, args.lora_path)
-        
+
     if args.input_json is not None:
         # load all possible reference videos, and prompts from the input JSON file
         with open(args.input_json, "r") as f:
@@ -363,13 +365,12 @@ def main() -> None:  # noqa: PLR0912, PLR0915
         num_frames = [args.num_frame]
         widths = [args.width]
         heights = [args.height]
-    
-    for sample_idx, (reference_video, prompt) in enumerate(zip(reference_videos, prompts)):
 
+    for sample_idx, (reference_video, prompt) in enumerate(zip(reference_videos, prompts, strict=False)):
         args.reference_video = reference_video
         if not isinstance(prompt, str):
             with open(prompt, "r") as f:
-                prompt = f.read().strip()
+                prompt = f.read().strip()  # noqa: PLW2901
         args.prompt = prompt
         args.height = heights[sample_idx]
         args.width = widths[sample_idx]
@@ -380,19 +381,19 @@ def main() -> None:  # noqa: PLR0912, PLR0915
         # Load conditioning image if provided
         condition_image = None
         # if args.condition_image:
-        #     print(f"Loading conditioning image from {args.condition_image}...")
-        #     condition_image = load_image(args.condition_image)
+        #     print(f"Loading conditioning image from {args.condition_image}...")  # noqa: ERA001
+        #     condition_image = load_image(args.condition_image)  # noqa: ERA001
 
         # Load reference video if provided
-        reference_video = None
+        reference_video = None  # noqa: PLW2901
         if args.reference_video:
             print(f"Loading reference video from {args.reference_video}...")
-            reference_video, ref_fps = read_video(args.reference_video, max_frames=args.num_frames)
+            reference_video, ref_fps = read_video(args.reference_video, max_frames=args.num_frames)  # noqa: PLW2901
             print(f"  Loaded {reference_video.shape[0]} frames @ {ref_fps:.1f} fps")
             valid_frames = (reference_video.shape[0] - 1) // 8 * 8 + 1
-            print(f'  Update num_frames to {valid_frames}')
+            print(f"  Update num_frames to {valid_frames}")
             args.num_frames = valid_frames
-        
+
         # Load reference audio if provided
         reference_audio = None
         if args.reference_audio:
@@ -400,7 +401,9 @@ def main() -> None:  # noqa: PLR0912, PLR0915
             # Calculate target duration based on video parameters
             target_duration = args.num_frames / args.frame_rate
             reference_audio = read_audio(args.reference_video, target_duration=target_duration)
-            print(f"  Loaded audio: {reference_audio['waveform'].shape[1]} samples @ {reference_audio['sample_rate']}Hz")
+            print(
+                f"  Loaded audio: {reference_audio['waveform'].shape[1]} samples @ {reference_audio['sample_rate']}Hz"
+            )
 
         # Determine generation mode
         if args.reference_video is not None and args.reference_audio:
@@ -440,7 +443,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
             if args.include_reference_in_output:
                 print("  → Will include reference side-by-side in output")
         if reference_audio is not None:
-            audio_duration = reference_audio['waveform'].shape[1] / reference_audio['sample_rate']
+            audio_duration = reference_audio["waveform"].shape[1] / reference_audio["sample_rate"]
             print(f"Reference Audio: {args.reference_video} ({audio_duration:.2f}s)")
         if generate_audio:
             video_duration = args.num_frames / args.frame_rate
@@ -520,7 +523,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
             )
             duration = audio.shape[1] / audio_sample_rate
             print(f"✓ Audio saved: {duration:.2f}s at {audio_sample_rate}Hz")
-            
+
         # clear cuda cache
         torch.cuda.empty_cache()
 

@@ -1,6 +1,4 @@
 from typing import Any, Iterator, List, Optional, Tuple
-import math
-import itertools
 
 import torch
 from torch import nn
@@ -441,8 +439,6 @@ class Encoder(nn.Module):
             weights[tile.in_coords] += mask
 
         return output / weights.clamp(min=1e-8)
-    
-    
 
 
 def _make_decoder_block(
