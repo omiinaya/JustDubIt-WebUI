@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+import math
 import torch
 
 from ltx_core.components.protocols import GuiderProtocol
@@ -24,7 +25,7 @@ class CFGGuider(GuiderProtocol):
         return (self.scale - 1) * (cond - uncond)
 
     def enabled(self) -> bool:
-        return self.scale != 1.0
+        return not math.isclose(self.scale, 1.0)
 
 
 @dataclass(frozen=True)
@@ -51,7 +52,7 @@ class CFGStarRescalingGuider(GuiderProtocol):
         return (self.scale - 1) * (cond - rescaled_neg)
 
     def enabled(self) -> bool:
-        return self.scale != 1.0
+        return not math.isclose(self.scale, 1.0)
 
 
 @dataclass(frozen=True)
@@ -75,7 +76,7 @@ class STGGuider(GuiderProtocol):
         return self.scale * (pos_denoised - perturbed_denoised)
 
     def enabled(self) -> bool:
-        return self.scale != 0.0
+        return not math.isclose(self.scale, 0.0)
 
 
 @dataclass(frozen=True)
@@ -130,7 +131,7 @@ class LtxAPGGuider(GuiderProtocol):
         return g_apg * (self.scale - 1)
 
     def enabled(self) -> bool:
-        return self.scale != 1.0
+        return not math.isclose(self.scale, 1.0)
 
 
 @dataclass(frozen=False)
@@ -201,7 +202,7 @@ class LegacyStatefulAPGGuider(GuiderProtocol):
         return g_apg * self.scale
 
     def enabled(self) -> bool:
-        return self.scale != 0.0
+        return not math.isclose(self.scale, 0.0)
 
 
 def projection_coef(to_project: torch.Tensor, project_onto: torch.Tensor) -> torch.Tensor:

@@ -12,6 +12,7 @@ from einops import rearrange
 from torch import Tensor
 import cv2
 import numpy as np
+import math
 
 
 from ltx_core.components.diffusion_steps import EulerDiffusionStep
@@ -937,7 +938,7 @@ class ValidationSampler:
         self._text_encoder.to(device)
         v_ctx_pos, a_ctx_pos, _ = self._text_encoder(config.prompt)
         v_ctx_neg, a_ctx_neg = None, None
-        if config.guidance_scale != 1.0:
+        if not math.isclose(config.guidance_scale, 1.0):
             v_ctx_neg, a_ctx_neg, _ = self._text_encoder(config.negative_prompt)
 
         # Move the base Gemma model to CPU but keep embeddings connectors on GPU
