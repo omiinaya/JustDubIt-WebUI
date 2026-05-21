@@ -13,7 +13,7 @@ def fused_add_round_launch(
     if original_weight.dtype == torch.float8_e4m3fn:
         exponent_bits, mantissa_bits, exponent_bias = 4, 3, 7
     elif original_weight.dtype == torch.float8_e5m2:
-        exponent_bits, mantissa_bits, exponent_bias = 5, 2, 15  # noqa: F841
+        exponent_bits, mantissa_bits, exponent_bias = 5, 2, 15
     else:
         raise ValueError("Unsupported dtype")
 
