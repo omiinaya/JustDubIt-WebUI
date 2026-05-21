@@ -434,7 +434,7 @@ def example() -> None:
     if len(sys.argv) < 2:
         print(
             f"Usage: python {sys.argv[0]} <video_path> [captioner_type]"
-        )  # noqa: T201
+        )
         print("  captioner_type: qwen_omni (default) or gemini_flash")  # noqa: T201
         sys.exit(1)
 

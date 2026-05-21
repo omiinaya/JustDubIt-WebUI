@@ -50,7 +50,7 @@ class UniformTimestepSampler(TimestepSampler):
         batch_size: int,
         seq_length: int | None = None,
         device: torch.device = None,
-    ) -> torch.Tensor:  # noqa: ARG002
+    ) -> torch.Tensor:
         return (
             torch.rand(batch_size, device=device) * (self.max_value - self.min_value)
             + self.min_value

@@ -40,7 +40,7 @@ def get_models():  # noqa: ANN201
             if f.endswith(".safetensors"):
                 size = os.path.getsize(os.path.join(models_dir, f)) / (
                     1024**3
-                )  # noqa: PTH118, PTH202
+                )
                 models.append({"name": f, "size_gb": round(size, 2)})
     return jsonify({"models": models})
 
@@ -150,7 +150,7 @@ def dub_video():  # noqa: ANN201
 
 def process_video(
     job_id, input_path, output_path, prompt, height, width, steps, cfg, fps, seed
-) -> None:  # noqa: ANN001
+) -> None:
     """Process video in background"""
     jobs[job_id]["status"] = "processing"
     jobs[job_id]["started_at"] = datetime.now().isoformat()  # noqa: DTZ005

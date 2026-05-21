@@ -402,7 +402,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
             print(f"Loading reference video from {args.reference_video}...")
             reference_video, ref_fps = read_video(
                 args.reference_video, max_frames=args.num_frames
-            )  # noqa: PLW2901
+            )
             print(f"  Loaded {reference_video.shape[0]} frames @ {ref_fps:.1f} fps")
             valid_frames = (reference_video.shape[0] - 1) // 8 * 8 + 1
             print(f"  Update num_frames to {valid_frames}")

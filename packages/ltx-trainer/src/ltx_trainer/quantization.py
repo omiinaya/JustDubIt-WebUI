@@ -61,7 +61,7 @@ def quantize_model(
 
 def _quanto_type_map(
     precision: QuantizationOptions,
-) -> torch.dtype | qtype | None:  # noqa: PLR0911
+) -> torch.dtype | qtype | None:
     if precision == "no_change":
         return None
 
