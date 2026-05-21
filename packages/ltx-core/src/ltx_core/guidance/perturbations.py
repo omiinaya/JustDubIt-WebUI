@@ -41,7 +41,10 @@ class PerturbationConfig:
         if self.perturbations is None:
             return False
 
-        return any(perturbation.is_perturbed(perturbation_type, block) for perturbation in self.perturbations)
+        return any(
+            perturbation.is_perturbed(perturbation_type, block)
+            for perturbation in self.perturbations
+        )
 
     @staticmethod
     def empty() -> "PerturbationConfig":
@@ -55,7 +58,11 @@ class BatchedPerturbationConfig:
     perturbations: list[PerturbationConfig]
 
     def mask(
-        self, perturbation_type: PerturbationType, block: int, device: DeviceLikeType, dtype: torch.dtype
+        self,
+        perturbation_type: PerturbationType,
+        block: int,
+        device: DeviceLikeType,
+        dtype: torch.dtype,
     ) -> torch.Tensor:
         mask = torch.ones((len(self.perturbations),), device=device, dtype=dtype)
         for batch_idx, perturbation in enumerate(self.perturbations):
@@ -64,16 +71,26 @@ class BatchedPerturbationConfig:
 
         return mask
 
-    def mask_like(self, perturbation_type: PerturbationType, block: int, values: torch.Tensor) -> torch.Tensor:
+    def mask_like(
+        self, perturbation_type: PerturbationType, block: int, values: torch.Tensor
+    ) -> torch.Tensor:
         mask = self.mask(perturbation_type, block, values.device, values.dtype)
         return mask.view(mask.numel(), *([1] * len(values.shape[1:])))
 
     def any_in_batch(self, perturbation_type: PerturbationType, block: int) -> bool:
-        return any(perturbation.is_perturbed(perturbation_type, block) for perturbation in self.perturbations)
+        return any(
+            perturbation.is_perturbed(perturbation_type, block)
+            for perturbation in self.perturbations
+        )
 
     def all_in_batch(self, perturbation_type: PerturbationType, block: int) -> bool:
-        return all(perturbation.is_perturbed(perturbation_type, block) for perturbation in self.perturbations)
+        return all(
+            perturbation.is_perturbed(perturbation_type, block)
+            for perturbation in self.perturbations
+        )
 
     @staticmethod
     def empty(batch_size: int) -> "BatchedPerturbationConfig":
-        return BatchedPerturbationConfig([PerturbationConfig.empty() for _ in range(batch_size)])
+        return BatchedPerturbationConfig(
+            [PerturbationConfig.empty() for _ in range(batch_size)]
+        )

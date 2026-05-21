@@ -8,7 +8,12 @@ class TimestepSampler:
     They should implement both sample() and sample_for() methods.
     """
 
-    def sample(self, batch_size: int, seq_length: int | None = None, device: torch.device = None) -> torch.Tensor:
+    def sample(
+        self,
+        batch_size: int,
+        seq_length: int | None = None,
+        device: torch.device = None,
+    ) -> torch.Tensor:
         """Sample timesteps for a batch.
 
         Args:
@@ -40,8 +45,16 @@ class UniformTimestepSampler(TimestepSampler):
         self.min_value = min_value
         self.max_value = max_value
 
-    def sample(self, batch_size: int, seq_length: int | None = None, device: torch.device = None) -> torch.Tensor:  # noqa: ARG002
-        return torch.rand(batch_size, device=device) * (self.max_value - self.min_value) + self.min_value
+    def sample(
+        self,
+        batch_size: int,
+        seq_length: int | None = None,
+        device: torch.device = None,
+    ) -> torch.Tensor:  # noqa: ARG002
+        return (
+            torch.rand(batch_size, device=device) * (self.max_value - self.min_value)
+            + self.min_value
+        )
 
     def sample_for(self, batch: torch.Tensor) -> torch.Tensor:
         if batch.ndim != 3:
@@ -59,7 +72,9 @@ class ShiftedLogitNormalTimestepSampler:
     def __init__(self, std: float = 1.0):
         self.std = std
 
-    def sample(self, batch_size: int, seq_length: int, device: torch.device = None) -> torch.Tensor:
+    def sample(
+        self, batch_size: int, seq_length: int, device: torch.device = None
+    ) -> torch.Tensor:
         """Sample timesteps for a batch from a shifted logit-normal distribution.
 
         Args:

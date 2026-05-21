@@ -10,7 +10,12 @@ LRELU_SLOPE = 0.1
 
 
 class ResBlock1(torch.nn.Module):
-    def __init__(self, channels: int, kernel_size: int = 3, dilation: Tuple[int, int, int] = (1, 3, 5)):
+    def __init__(
+        self,
+        channels: int,
+        kernel_size: int = 3,
+        dilation: Tuple[int, int, int] = (1, 3, 5),
+    ):
         super(ResBlock1, self).__init__()
         self.convs1 = torch.nn.ModuleList(
             [
@@ -81,7 +86,9 @@ class ResBlock1(torch.nn.Module):
 
 
 class ResBlock2(torch.nn.Module):
-    def __init__(self, channels: int, kernel_size: int = 3, dilation: Tuple[int, int] = (1, 3)):
+    def __init__(
+        self, channels: int, kernel_size: int = 3, dilation: Tuple[int, int] = (1, 3)
+    ):
         super(ResBlock2, self).__init__()
         self.convs = torch.nn.ModuleList(
             [
@@ -136,20 +143,40 @@ class ResnetBlock(torch.nn.Module):
 
         self.norm1 = build_normalization_layer(in_channels, normtype=norm_type)
         self.non_linearity = torch.nn.SiLU()
-        self.conv1 = make_conv2d(in_channels, out_channels, kernel_size=3, stride=1, causality_axis=causality_axis)
+        self.conv1 = make_conv2d(
+            in_channels,
+            out_channels,
+            kernel_size=3,
+            stride=1,
+            causality_axis=causality_axis,
+        )
         if temb_channels > 0:
             self.temb_proj = torch.nn.Linear(temb_channels, out_channels)
         self.norm2 = build_normalization_layer(out_channels, normtype=norm_type)
         self.dropout = torch.nn.Dropout(dropout)
-        self.conv2 = make_conv2d(out_channels, out_channels, kernel_size=3, stride=1, causality_axis=causality_axis)
+        self.conv2 = make_conv2d(
+            out_channels,
+            out_channels,
+            kernel_size=3,
+            stride=1,
+            causality_axis=causality_axis,
+        )
         if self.in_channels != self.out_channels:
             if self.use_conv_shortcut:
                 self.conv_shortcut = make_conv2d(
-                    in_channels, out_channels, kernel_size=3, stride=1, causality_axis=causality_axis
+                    in_channels,
+                    out_channels,
+                    kernel_size=3,
+                    stride=1,
+                    causality_axis=causality_axis,
                 )
             else:
                 self.nin_shortcut = make_conv2d(
-                    in_channels, out_channels, kernel_size=1, stride=1, causality_axis=causality_axis
+                    in_channels,
+                    out_channels,
+                    kernel_size=1,
+                    stride=1,
+                    causality_axis=causality_axis,
                 )
 
     def forward(
@@ -171,6 +198,10 @@ class ResnetBlock(torch.nn.Module):
         h = self.conv2(h)
 
         if self.in_channels != self.out_channels:
-            x = self.conv_shortcut(x) if self.use_conv_shortcut else self.nin_shortcut(x)
+            x = (
+                self.conv_shortcut(x)
+                if self.use_conv_shortcut
+                else self.nin_shortcut(x)
+            )
 
         return x + h

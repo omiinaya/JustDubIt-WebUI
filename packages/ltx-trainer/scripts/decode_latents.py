@@ -30,7 +30,11 @@ from rich.progress import (
 from transformers.utils.logging import disable_progress_bar
 
 from ltx_trainer import logger
-from ltx_trainer.model_loader import load_audio_vae_decoder, load_video_vae_decoder, load_vocoder
+from ltx_trainer.model_loader import (
+    load_audio_vae_decoder,
+    load_video_vae_decoder,
+    load_vocoder,
+)
 from ltx_trainer.video_utils import save_video
 
 disable_progress_bar()
@@ -65,23 +69,37 @@ class LatentsDecoder:
         self.vocoder = None
         self._load_model(model_path, vae_tiling, with_audio)
 
-    def _load_model(self, model_path: str, vae_tiling: bool, with_audio: bool = False) -> None:
+    def _load_model(
+        self, model_path: str, vae_tiling: bool, with_audio: bool = False
+    ) -> None:
         """Initialize and load the VAE model(s)."""
-        with console.status(f"[bold]Loading video VAE decoder from {model_path}...", spinner="dots"):
-            self.vae = load_video_vae_decoder(model_path, device=self.device, dtype=torch.bfloat16)
+        with console.status(
+            f"[bold]Loading video VAE decoder from {model_path}...", spinner="dots"
+        ):
+            self.vae = load_video_vae_decoder(
+                model_path, device=self.device, dtype=torch.bfloat16
+            )
 
             if vae_tiling:
                 self.vae.enable_tiling()
 
         if with_audio:
-            with console.status(f"[bold]Loading audio VAE decoder from {model_path}...", spinner="dots"):
-                self.audio_vae = load_audio_vae_decoder(model_path, device=self.device, dtype=torch.bfloat16)
+            with console.status(
+                f"[bold]Loading audio VAE decoder from {model_path}...", spinner="dots"
+            ):
+                self.audio_vae = load_audio_vae_decoder(
+                    model_path, device=self.device, dtype=torch.bfloat16
+                )
 
-            with console.status(f"[bold]Loading vocoder from {model_path}...", spinner="dots"):
+            with console.status(
+                f"[bold]Loading vocoder from {model_path}...", spinner="dots"
+            ):
                 self.vocoder = load_vocoder(model_path, device=self.device)
 
     @torch.inference_mode()
-    def decode(self, latents_dir: Path, output_dir: Path, seed: int | None = None) -> None:
+    def decode(
+        self, latents_dir: Path, output_dir: Path, seed: int | None = None
+    ) -> None:
         """Decode all latent files in the directory recursively.
 
         Args:
@@ -126,7 +144,9 @@ class LatentsDecoder:
 
         logger.info(f"Decoding complete! Videos saved to {output_dir}")
 
-    def _process_file(self, latent_file: Path, output_dir: Path, seed: int | None) -> None:
+    def _process_file(
+        self, latent_file: Path, output_dir: Path, seed: int | None
+    ) -> None:
         """Process a single latent file."""
         # Load the latent data
         data = torch.load(latent_file, map_location=self.device, weights_only=False)
@@ -334,7 +354,11 @@ def main(
 
     # Decode audio if requested
     if with_audio:
-        audio_path = Path(audio_latents_dir) if audio_latents_dir else latents_path.parent / "audio_latents"
+        audio_path = (
+            Path(audio_latents_dir)
+            if audio_latents_dir
+            else latents_path.parent / "audio_latents"
+        )
 
         if audio_path.exists():
             audio_output_path = output_path.parent / "decoded_audio"

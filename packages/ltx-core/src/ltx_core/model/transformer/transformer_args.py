@@ -68,7 +68,9 @@ class TransformerArgsPreprocessor:
 
         # Second dimension is 1 or number of tokens (if timestep_per_token)
         timestep = timestep.view(batch_size, -1, timestep.shape[-1])
-        embedded_timestep = embedded_timestep.view(batch_size, -1, embedded_timestep.shape[-1])
+        embedded_timestep = embedded_timestep.view(
+            batch_size, -1, embedded_timestep.shape[-1]
+        )
         return timestep, embedded_timestep
 
     def _prepare_context(
@@ -84,7 +86,9 @@ class TransformerArgsPreprocessor:
 
         return context, attention_mask
 
-    def _prepare_attention_mask(self, attention_mask: torch.Tensor | None, x_dtype: torch.dtype) -> torch.Tensor | None:
+    def _prepare_attention_mask(
+        self, attention_mask: torch.Tensor | None, x_dtype: torch.dtype
+    ) -> torch.Tensor | None:
         """Prepare attention mask."""
         if attention_mask is None or torch.is_floating_point(attention_mask):
             return attention_mask
@@ -103,7 +107,11 @@ class TransformerArgsPreprocessor:
         x_dtype: torch.dtype,
     ) -> torch.Tensor:
         """Prepare positional embeddings."""
-        freq_grid_generator = generate_freq_grid_np if self.double_precision_rope else generate_freq_grid_pytorch
+        freq_grid_generator = (
+            generate_freq_grid_np
+            if self.double_precision_rope
+            else generate_freq_grid_pytorch
+        )
         pe = precompute_freqs_cis(
             positions,
             dim=inner_dim,
@@ -122,9 +130,15 @@ class TransformerArgsPreprocessor:
         modality: Modality,
     ) -> TransformerArgs:
         x = self.patchify_proj(modality.latent)
-        timestep, embedded_timestep = self._prepare_timestep(modality.timesteps, x.shape[0], modality.latent.dtype)
-        context, attention_mask = self._prepare_context(modality.context, x, modality.context_mask)
-        attention_mask = self._prepare_attention_mask(attention_mask, modality.latent.dtype)
+        timestep, embedded_timestep = self._prepare_timestep(
+            modality.timesteps, x.shape[0], modality.latent.dtype
+        )
+        context, attention_mask = self._prepare_context(
+            modality.context, x, modality.context_mask
+        )
+        attention_mask = self._prepare_attention_mask(
+            attention_mask, modality.latent.dtype
+        )
         pe = self._prepare_positional_embeddings(
             positions=modality.positions,
             inner_dim=self.inner_dim,
@@ -201,11 +215,13 @@ class MultiModalTransformerArgsPreprocessor:
             x_dtype=modality.latent.dtype,
         )
 
-        cross_scale_shift_timestep, cross_gate_timestep = self._prepare_cross_attention_timestep(
-            timestep=modality.timesteps,
-            timestep_scale_multiplier=self.simple_preprocessor.timestep_scale_multiplier,
-            batch_size=transformer_args.x.shape[0],
-            hidden_dtype=modality.latent.dtype,
+        cross_scale_shift_timestep, cross_gate_timestep = (
+            self._prepare_cross_attention_timestep(
+                timestep=modality.timesteps,
+                timestep_scale_multiplier=self.simple_preprocessor.timestep_scale_multiplier,
+                batch_size=transformer_args.x.shape[0],
+                hidden_dtype=modality.latent.dtype,
+            )
         )
 
         return replace(
@@ -232,11 +248,15 @@ class MultiModalTransformerArgsPreprocessor:
             timestep.flatten(),
             hidden_dtype=hidden_dtype,
         )
-        scale_shift_timestep = scale_shift_timestep.view(batch_size, -1, scale_shift_timestep.shape[-1])
+        scale_shift_timestep = scale_shift_timestep.view(
+            batch_size, -1, scale_shift_timestep.shape[-1]
+        )
         gate_noise_timestep, _ = self.cross_gate_adaln(
             timestep.flatten() * av_ca_factor,
             hidden_dtype=hidden_dtype,
         )
-        gate_noise_timestep = gate_noise_timestep.view(batch_size, -1, gate_noise_timestep.shape[-1])
+        gate_noise_timestep = gate_noise_timestep.view(
+            batch_size, -1, gate_noise_timestep.shape[-1]
+        )
 
         return scale_shift_timestep, gate_noise_timestep

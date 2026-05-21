@@ -8,7 +8,10 @@ from ltx_core.model.transformer.attention import AttentionCallable, AttentionFun
 from ltx_core.model.transformer.modality import Modality
 from ltx_core.model.transformer.rope import LTXRopeType
 from ltx_core.model.transformer.text_projection import PixArtAlphaTextProjection
-from ltx_core.model.transformer.transformer import BasicAVTransformerBlock, TransformerConfig
+from ltx_core.model.transformer.transformer import (
+    BasicAVTransformerBlock,
+    TransformerConfig,
+)
 from ltx_core.model.transformer.transformer_args import (
     MultiModalTransformerArgsPreprocessor,
     TransformerArgs,
@@ -47,7 +50,9 @@ class LTXModel(torch.nn.Module):
         num_layers: int = 48,
         cross_attention_dim: int = 4096,
         norm_eps: float = 1e-06,
-        attention_type: AttentionFunction | AttentionCallable = AttentionFunction.DEFAULT,
+        attention_type: (
+            AttentionFunction | AttentionCallable
+        ) = AttentionFunction.DEFAULT,
         caption_channels: int = 3840,
         positional_embedding_theta: float = 10000.0,
         positional_embedding_max_pos: list[int] | None = None,
@@ -90,7 +95,9 @@ class LTXModel(torch.nn.Module):
                 audio_positional_embedding_max_pos = [20]
             self.audio_positional_embedding_max_pos = audio_positional_embedding_max_pos
             self.audio_num_attention_heads = audio_num_attention_heads
-            self.audio_inner_dim = self.audio_num_attention_heads * audio_attention_head_dim
+            self.audio_inner_dim = (
+                self.audio_num_attention_heads * audio_attention_head_dim
+            )
             self._init_audio(
                 in_channels=audio_in_channels,
                 out_channels=audio_out_channels,
@@ -99,7 +106,10 @@ class LTXModel(torch.nn.Module):
             )
 
         if model_type.is_video_enabled() and model_type.is_audio_enabled():
-            cross_pe_max_pos = max(self.positional_embedding_max_pos[0], self.audio_positional_embedding_max_pos[0])
+            cross_pe_max_pos = max(
+                self.positional_embedding_max_pos[0],
+                self.audio_positional_embedding_max_pos[0],
+            )
             self.av_ca_timestep_scale_multiplier = av_ca_timestep_scale_multiplier
             self.audio_cross_attention_dim = audio_cross_attention_dim
             self._init_audio_video(num_scale_shift_values=4)
@@ -108,9 +118,13 @@ class LTXModel(torch.nn.Module):
         # Initialize transformer blocks
         self._init_transformer_blocks(
             num_layers=num_layers,
-            attention_head_dim=attention_head_dim if model_type.is_video_enabled() else 0,
+            attention_head_dim=(
+                attention_head_dim if model_type.is_video_enabled() else 0
+            ),
             cross_attention_dim=cross_attention_dim,
-            audio_attention_head_dim=audio_attention_head_dim if model_type.is_audio_enabled() else 0,
+            audio_attention_head_dim=(
+                audio_attention_head_dim if model_type.is_audio_enabled() else 0
+            ),
             audio_cross_attention_dim=audio_cross_attention_dim,
             norm_eps=norm_eps,
             attention_type=attention_type,
@@ -137,7 +151,9 @@ class LTXModel(torch.nn.Module):
 
         # Video output components
         self.scale_shift_table = torch.nn.Parameter(torch.empty(2, self.inner_dim))
-        self.norm_out = torch.nn.LayerNorm(self.inner_dim, elementwise_affine=False, eps=norm_eps)
+        self.norm_out = torch.nn.LayerNorm(
+            self.inner_dim, elementwise_affine=False, eps=norm_eps
+        )
         self.proj_out = torch.nn.Linear(self.inner_dim, out_channels)
 
     def _init_audio(
@@ -150,7 +166,9 @@ class LTXModel(torch.nn.Module):
         """Initialize audio-specific components."""
 
         # Audio input components
-        self.audio_patchify_proj = torch.nn.Linear(in_channels, self.audio_inner_dim, bias=True)
+        self.audio_patchify_proj = torch.nn.Linear(
+            in_channels, self.audio_inner_dim, bias=True
+        )
 
         self.audio_adaln_single = AdaLayerNormSingle(
             self.audio_inner_dim,
@@ -163,8 +181,12 @@ class LTXModel(torch.nn.Module):
         )
 
         # Audio output components
-        self.audio_scale_shift_table = torch.nn.Parameter(torch.empty(2, self.audio_inner_dim))
-        self.audio_norm_out = torch.nn.LayerNorm(self.audio_inner_dim, elementwise_affine=False, eps=norm_eps)
+        self.audio_scale_shift_table = torch.nn.Parameter(
+            torch.empty(2, self.audio_inner_dim)
+        )
+        self.audio_norm_out = torch.nn.LayerNorm(
+            self.audio_inner_dim, elementwise_affine=False, eps=norm_eps
+        )
         self.audio_proj_out = torch.nn.Linear(self.audio_inner_dim, out_channels)
 
     def _init_audio_video(
@@ -362,7 +384,8 @@ class LTXModel(torch.nn.Module):
         """Process output for LTXV."""
         # Apply scale-shift modulation
         scale_shift_values = (
-            scale_shift_table[None, None].to(device=x.device, dtype=x.dtype) + embedded_timestep[:, :, None]
+            scale_shift_table[None, None].to(device=x.device, dtype=x.dtype)
+            + embedded_timestep[:, :, None]
         )
         shift, scale = scale_shift_values[:, :, 0], scale_shift_values[:, :, 1]
 
@@ -372,7 +395,10 @@ class LTXModel(torch.nn.Module):
         return x
 
     def forward(
-        self, video: Modality | None, audio: Modality | None, perturbations: BatchedPerturbationConfig
+        self,
+        video: Modality | None,
+        audio: Modality | None,
+        perturbations: BatchedPerturbationConfig,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Forward pass for LTX models.
@@ -385,8 +411,12 @@ class LTXModel(torch.nn.Module):
         if not self.model_type.is_audio_enabled() and audio is not None:
             raise ValueError("Audio is not enabled for this model")
 
-        video_args = self.video_args_preprocessor.prepare(video) if video is not None else None
-        audio_args = self.audio_args_preprocessor.prepare(audio) if audio is not None else None
+        video_args = (
+            self.video_args_preprocessor.prepare(video) if video is not None else None
+        )
+        audio_args = (
+            self.audio_args_preprocessor.prepare(audio) if audio is not None else None
+        )
         # Process transformer blocks
         video_out, audio_out = self._process_transformer_blocks(
             video=video_args,
@@ -397,7 +427,11 @@ class LTXModel(torch.nn.Module):
         # Process output
         vx = (
             self._process_output(
-                self.scale_shift_table, self.norm_out, self.proj_out, video_out.x, video_out.embedded_timestep
+                self.scale_shift_table,
+                self.norm_out,
+                self.proj_out,
+                video_out.x,
+                video_out.embedded_timestep,
             )
             if video_out is not None
             else None
@@ -440,8 +474,12 @@ class LegacyX0Model(torch.nn.Module):
             Denoised video and audio
         """
         vx, ax = self.velocity_model(video, audio, perturbations)
-        denoised_video = to_denoised(video.latent, vx, sigma) if vx is not None else None
-        denoised_audio = to_denoised(audio.latent, ax, sigma) if ax is not None else None
+        denoised_video = (
+            to_denoised(video.latent, vx, sigma) if vx is not None else None
+        )
+        denoised_audio = (
+            to_denoised(audio.latent, ax, sigma) if ax is not None else None
+        )
         return denoised_video, denoised_audio
 
 
@@ -469,6 +507,10 @@ class X0Model(torch.nn.Module):
             Denoised video and audio
         """
         vx, ax = self.velocity_model(video, audio, perturbations)
-        denoised_video = to_denoised(video.latent, vx, video.timesteps) if vx is not None else None
-        denoised_audio = to_denoised(audio.latent, ax, audio.timesteps) if ax is not None else None
+        denoised_video = (
+            to_denoised(video.latent, vx, video.timesteps) if vx is not None else None
+        )
+        denoised_audio = (
+            to_denoised(audio.latent, ax, audio.timesteps) if ax is not None else None
+        )
         return denoised_video, denoised_audio

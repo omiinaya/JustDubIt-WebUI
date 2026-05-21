@@ -6,7 +6,11 @@ from ltx_core.model.video_vae.model_configurator import (
     VAEDecoderConfigurator,
     VAEEncoderConfigurator,
 )
-from ltx_core.model.video_vae.tiling import SpatialTilingConfig, TemporalTilingConfig, TilingConfig
+from ltx_core.model.video_vae.tiling import (
+    SpatialTilingConfig,
+    TemporalTilingConfig,
+    TilingConfig,
+)
 from ltx_core.model.video_vae.video_vae import Decoder, Encoder
 
 __all__ = [

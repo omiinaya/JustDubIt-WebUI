@@ -38,7 +38,9 @@ def get_models():  # noqa: ANN201
     if os.path.exists(models_dir):  # noqa: PTH110
         for f in os.listdir(models_dir):  # noqa: PTH208
             if f.endswith(".safetensors"):
-                size = os.path.getsize(os.path.join(models_dir, f)) / (1024**3)  # noqa: PTH118, PTH202
+                size = os.path.getsize(os.path.join(models_dir, f)) / (
+                    1024**3
+                )  # noqa: PTH118, PTH202
                 models.append({"name": f, "size_gb": round(size, 2)})
     return jsonify({"models": models})
 
@@ -68,7 +70,12 @@ def dub_video():  # noqa: ANN201
         return jsonify({"error": "No file selected"}), 400
 
     if not allowed_file(file.filename):
-        return jsonify({"error": "Invalid file type. Supported: mp4, avi, mov, mkv, webm"}), 400
+        return (
+            jsonify(
+                {"error": "Invalid file type. Supported: mp4, avi, mov, mkv, webm"}
+            ),
+            400,
+        )
 
     # Get parameters
     prompt = request.form.get("prompt", "")
@@ -103,7 +110,14 @@ def dub_video():  # noqa: ANN201
         "input_file": filename,
         "output_file": output_filename,
         "prompt": prompt,
-        "params": {"height": height, "width": width, "steps": steps, "cfg": cfg, "fps": fps, "seed": seed},
+        "params": {
+            "height": height,
+            "width": width,
+            "steps": steps,
+            "cfg": cfg,
+            "fps": fps,
+            "seed": seed,
+        },
         "created_at": datetime.now().isoformat(),  # noqa: DTZ005
         "started_at": None,
         "completed_at": None,
@@ -114,7 +128,19 @@ def dub_video():  # noqa: ANN201
     import threading  # noqa: PLC0415
 
     thread = threading.Thread(
-        target=process_video, args=(job_id, filepath, output_path, prompt, height, width, steps, cfg, fps, seed)
+        target=process_video,
+        args=(
+            job_id,
+            filepath,
+            output_path,
+            prompt,
+            height,
+            width,
+            steps,
+            cfg,
+            fps,
+            seed,
+        ),
     )
     thread.daemon = True
     thread.start()
@@ -122,7 +148,9 @@ def dub_video():  # noqa: ANN201
     return jsonify({"job_id": job_id, "status": "queued"})
 
 
-def process_video(job_id, input_path, output_path, prompt, height, width, steps, cfg, fps, seed) -> None:  # noqa: ANN001
+def process_video(
+    job_id, input_path, output_path, prompt, height, width, steps, cfg, fps, seed
+) -> None:  # noqa: ANN001
     """Process video in background"""
     jobs[job_id]["status"] = "processing"
     jobs[job_id]["started_at"] = datetime.now().isoformat()  # noqa: DTZ005
@@ -139,7 +167,7 @@ def process_video(job_id, input_path, output_path, prompt, height, width, steps,
         cmd = [
             "bash",
             "-c",
-            f'''
+            f"""
 cd /opt/just-dub-it &&
 source .venv/bin/activate &&
 python src/ltx_pipelines/pipeline_justdubit.py \\
@@ -159,7 +187,7 @@ python src/ltx_pipelines/pipeline_justdubit.py \\
     --frame_rate {fps} \\
     --seed {seed} \\
     --output_path "{output_path}" 2>&1
-            ''',
+            """,
         ]
 
         jobs[job_id]["message"] = "Running AI dubbing (this may take 10-30 minutes)..."
@@ -167,7 +195,11 @@ python src/ltx_pipelines/pipeline_justdubit.py \\
 
         # Run process
         process = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, env=env
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            env=env,
         )
 
         # Monitor progress
@@ -184,7 +216,9 @@ python src/ltx_pipelines/pipeline_justdubit.py \\
                         total = int(parts[1].split()[0])
                         progress = 20 + int((current / total) * 70)
                         jobs[job_id]["progress"] = min(progress, 90)
-                        jobs[job_id]["message"] = f"Processing step {current}/{total}..."
+                        jobs[job_id][
+                            "message"
+                        ] = f"Processing step {current}/{total}..."
                 except Exception:
                     pass
 
@@ -221,7 +255,9 @@ def download_video(job_id):  # noqa: ANN001, ANN201
     if not os.path.exists(output_path):  # noqa: PTH110
         return jsonify({"error": "Output file not found"}), 404
 
-    return send_file(output_path, as_attachment=True, download_name=f"dubbed_{job['input_file']}")
+    return send_file(
+        output_path, as_attachment=True, download_name=f"dubbed_{job['input_file']}"
+    )
 
 
 @app.route("/api/delete/<job_id>", methods=["DELETE"])

@@ -49,7 +49,9 @@ class AudioProcessor(nn.Module):
         waveform_sample_rate: int,
     ) -> torch.Tensor:
         """Convert waveform to log-mel spectrogram [batch, channels, time, n_mels]."""
-        waveform = self.resample_waveform(waveform, waveform_sample_rate, self.sample_rate)
+        waveform = self.resample_waveform(
+            waveform, waveform_sample_rate, self.sample_rate
+        )
 
         mel = self.mel_transform(waveform)
         mel = torch.log(torch.clamp(mel, min=1e-5))
@@ -70,7 +72,11 @@ class PerChannelStatistics(nn.Module):
         self.register_buffer("mean-of-means", torch.empty(latent_channels))
 
     def un_normalize(self, x: torch.Tensor) -> torch.Tensor:
-        return (x * self.get_buffer("std-of-means").to(x)) + self.get_buffer("mean-of-means").to(x)
+        return (x * self.get_buffer("std-of-means").to(x)) + self.get_buffer(
+            "mean-of-means"
+        ).to(x)
 
     def normalize(self, x: torch.Tensor) -> torch.Tensor:
-        return (x - self.get_buffer("mean-of-means").to(x)) / self.get_buffer("std-of-means").to(x)
+        return (x - self.get_buffer("mean-of-means").to(x)) / self.get_buffer(
+            "std-of-means"
+        ).to(x)

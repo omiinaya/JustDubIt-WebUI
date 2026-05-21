@@ -9,7 +9,9 @@ from ltx_core.types import LatentState
 class Noiser(Protocol):
     """Protocol for adding noise to a latent state during diffusion."""
 
-    def __call__(self, latent_state: LatentState, noise_scale: float) -> LatentState: ...
+    def __call__(
+        self, latent_state: LatentState, noise_scale: float
+    ) -> LatentState: ...
 
 
 class GaussianNoiser(Noiser):
@@ -20,7 +22,9 @@ class GaussianNoiser(Noiser):
 
         self.generator = generator
 
-    def __call__(self, latent_state: LatentState, noise_scale: float = 1.0) -> LatentState:
+    def __call__(
+        self, latent_state: LatentState, noise_scale: float = 1.0
+    ) -> LatentState:
         noise = torch.randn(
             *latent_state.latent.shape,
             device=latent_state.latent.device,

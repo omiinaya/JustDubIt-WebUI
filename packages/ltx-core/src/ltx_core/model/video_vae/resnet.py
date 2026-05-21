@@ -4,7 +4,9 @@ import torch
 from torch import nn
 
 from ltx_core.model.common.normalization import PixelNorm
-from ltx_core.model.transformer.timestep_embedding import PixArtAlphaCombinedTimestepSizeEmbeddings
+from ltx_core.model.transformer.timestep_embedding import (
+    PixArtAlphaCombinedTimestepSizeEmbeddings,
+)
 from ltx_core.model.video_vae.convolution import make_conv_nd, make_linear_nd
 from ltx_core.model.video_vae.enums import NormLayerType, PaddingModeType
 
@@ -42,7 +44,9 @@ class ResnetBlock3D(nn.Module):
         self.inject_noise = inject_noise
 
         if norm_layer == NormLayerType.GROUP_NORM:
-            self.norm1 = nn.GroupNorm(num_groups=groups, num_channels=in_channels, eps=eps, affine=True)
+            self.norm1 = nn.GroupNorm(
+                num_groups=groups, num_channels=in_channels, eps=eps, affine=True
+            )
         elif norm_layer == NormLayerType.PIXEL_NORM:
             self.norm1 = PixelNorm()
 
@@ -63,7 +67,9 @@ class ResnetBlock3D(nn.Module):
             self.per_channel_scale1 = nn.Parameter(torch.zeros((in_channels, 1, 1)))
 
         if norm_layer == NormLayerType.GROUP_NORM:
-            self.norm2 = nn.GroupNorm(num_groups=groups, num_channels=out_channels, eps=eps, affine=True)
+            self.norm2 = nn.GroupNorm(
+                num_groups=groups, num_channels=out_channels, eps=eps, affine=True
+            )
         elif norm_layer == NormLayerType.PIXEL_NORM:
             self.norm2 = PixelNorm()
 
@@ -84,7 +90,9 @@ class ResnetBlock3D(nn.Module):
             self.per_channel_scale2 = nn.Parameter(torch.zeros((in_channels, 1, 1)))
 
         self.conv_shortcut = (
-            make_linear_nd(dims=dims, in_channels=in_channels, out_channels=out_channels)
+            make_linear_nd(
+                dims=dims, in_channels=in_channels, out_channels=out_channels
+            )
             if in_channels != out_channels
             else nn.Identity()
         )
@@ -100,7 +108,9 @@ class ResnetBlock3D(nn.Module):
         self.timestep_conditioning = timestep_conditioning
 
         if timestep_conditioning:
-            self.scale_shift_table = nn.Parameter(torch.randn(4, in_channels) / in_channels**0.5)
+            self.scale_shift_table = nn.Parameter(
+                torch.randn(4, in_channels) / in_channels**0.5
+            )
 
     def _feed_spatial_noise(
         self,
@@ -113,7 +123,9 @@ class ResnetBlock3D(nn.Module):
         dtype = hidden_states.dtype
 
         # similar to the "explicit noise inputs" method in style-gan
-        spatial_noise = torch.randn(spatial_shape, device=device, dtype=dtype, generator=generator)[None]
+        spatial_noise = torch.randn(
+            spatial_shape, device=device, dtype=dtype, generator=generator
+        )[None]
         scaled_noise = (spatial_noise * per_channel_scale)[None, :, None, ...]
         hidden_states = hidden_states + scaled_noise
 
@@ -132,7 +144,9 @@ class ResnetBlock3D(nn.Module):
         hidden_states = self.norm1(hidden_states)
         if self.timestep_conditioning:
             if timestep is None:
-                raise ValueError("'timestep' parameter must be provided when 'timestep_conditioning' is True")
+                raise ValueError(
+                    "'timestep' parameter must be provided when 'timestep_conditioning' is True"
+                )
             ada_values = self.scale_shift_table[None, ..., None, None, None].to(
                 device=hidden_states.device, dtype=hidden_states.dtype
             ) + timestep.reshape(
@@ -154,7 +168,9 @@ class ResnetBlock3D(nn.Module):
         if self.inject_noise:
             hidden_states = self._feed_spatial_noise(
                 hidden_states,
-                self.per_channel_scale1.to(device=hidden_states.device, dtype=hidden_states.dtype),
+                self.per_channel_scale1.to(
+                    device=hidden_states.device, dtype=hidden_states.dtype
+                ),
                 generator=generator,
             )
 
@@ -172,7 +188,9 @@ class ResnetBlock3D(nn.Module):
         if self.inject_noise:
             hidden_states = self._feed_spatial_noise(
                 hidden_states,
-                self.per_channel_scale2.to(device=hidden_states.device, dtype=hidden_states.dtype),
+                self.per_channel_scale2.to(
+                    device=hidden_states.device, dtype=hidden_states.dtype
+                ),
                 generator=generator,
             )
 
@@ -225,7 +243,9 @@ class UNetMidBlock3D(nn.Module):
         spatial_padding_mode: PaddingModeType = PaddingModeType.ZEROS,
     ):
         super().__init__()
-        resnet_groups = resnet_groups if resnet_groups is not None else min(in_channels // 4, 32)
+        resnet_groups = (
+            resnet_groups if resnet_groups is not None else min(in_channels // 4, 32)
+        )
 
         self.timestep_conditioning = timestep_conditioning
 
@@ -262,13 +282,17 @@ class UNetMidBlock3D(nn.Module):
         timestep_embed = None
         if self.timestep_conditioning:
             if timestep is None:
-                raise ValueError("'timestep' parameter must be provided when 'timestep_conditioning' is True")
+                raise ValueError(
+                    "'timestep' parameter must be provided when 'timestep_conditioning' is True"
+                )
             batch_size = hidden_states.shape[0]
             timestep_embed = self.time_embedder(
                 timestep=timestep.flatten(),
                 hidden_dtype=hidden_states.dtype,
             )
-            timestep_embed = timestep_embed.view(batch_size, timestep_embed.shape[-1], 1, 1, 1)
+            timestep_embed = timestep_embed.view(
+                batch_size, timestep_embed.shape[-1], 1, 1, 1
+            )
 
         for resnet in self.res_blocks:
             hidden_states = resnet(

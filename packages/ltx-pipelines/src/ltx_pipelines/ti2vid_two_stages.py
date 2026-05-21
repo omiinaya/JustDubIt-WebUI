@@ -100,7 +100,9 @@ class TI2VidTwoStagesPipeline:
         dtype = torch.bfloat16
 
         text_encoder = self.stage_1_model_ledger.text_encoder()
-        context_p, context_n = encode_text(text_encoder, prompts=[prompt, negative_prompt])
+        context_p, context_n = encode_text(
+            text_encoder, prompts=[prompt, negative_prompt]
+        )
         v_context_p, a_context_p = context_p
         v_context_n, a_context_n = context_n
 
@@ -111,10 +113,17 @@ class TI2VidTwoStagesPipeline:
         # Stage 1: Initial low resolution video generation.
         video_encoder = self.stage_1_model_ledger.video_encoder()
         transformer = self.stage_1_model_ledger.transformer()
-        sigmas = LTX2Scheduler().execute(steps=num_inference_steps).to(dtype=torch.float32, device=self.device)
+        sigmas = (
+            LTX2Scheduler()
+            .execute(steps=num_inference_steps)
+            .to(dtype=torch.float32, device=self.device)
+        )
 
         def first_stage_denoising_loop(
-            sigmas: torch.Tensor, video_state: LatentState, audio_state: LatentState, stepper: DiffusionStepProtocol
+            sigmas: torch.Tensor,
+            video_state: LatentState,
+            audio_state: LatentState,
+            stepper: DiffusionStepProtocol,
         ) -> tuple[LatentState, LatentState]:
             return euler_denoising_loop(
                 sigmas=sigmas,
@@ -131,7 +140,9 @@ class TI2VidTwoStagesPipeline:
                 ),
             )
 
-        stage_1_output_shape = VideoPixelShape(batch=1, frames=num_frames, width=width, height=height, fps=frame_rate)
+        stage_1_output_shape = VideoPixelShape(
+            batch=1, frames=num_frames, width=width, height=height, fps=frame_rate
+        )
         stage_1_conditionings = image_conditionings_by_replacing_latent(
             images=images,
             height=stage_1_output_shape.height,
@@ -170,7 +181,10 @@ class TI2VidTwoStagesPipeline:
         distilled_sigmas = torch.Tensor(STAGE_2_DISTILLED_SIGMA_VALUES).to(self.device)
 
         def second_stage_denoising_loop(
-            sigmas: torch.Tensor, video_state: LatentState, audio_state: LatentState, stepper: DiffusionStepProtocol
+            sigmas: torch.Tensor,
+            video_state: LatentState,
+            audio_state: LatentState,
+            stepper: DiffusionStepProtocol,
         ) -> tuple[LatentState, LatentState]:
             return euler_denoising_loop(
                 sigmas=sigmas,
@@ -185,7 +199,11 @@ class TI2VidTwoStagesPipeline:
             )
 
         stage_2_output_shape = VideoPixelShape(
-            batch=1, frames=num_frames, width=width * 2, height=height * 2, fps=frame_rate
+            batch=1,
+            frames=num_frames,
+            width=width * 2,
+            height=height * 2,
+            fps=frame_rate,
         )
         stage_2_conditionings = image_conditionings_by_replacing_latent(
             images=images,
@@ -215,9 +233,13 @@ class TI2VidTwoStagesPipeline:
         del video_encoder
         utils.cleanup_memory()
 
-        decoded_video = vae_decode_video(video_state, self.stage_2_model_ledger.video_decoder(), tiling_config)
+        decoded_video = vae_decode_video(
+            video_state, self.stage_2_model_ledger.video_decoder(), tiling_config
+        )
         decoded_audio = vae_decode_audio(
-            audio_state, self.stage_2_model_ledger.audio_decoder(), self.stage_2_model_ledger.vocoder()
+            audio_state,
+            self.stage_2_model_ledger.audio_decoder(),
+            self.stage_2_model_ledger.vocoder(),
         )
 
         return decoded_video, decoded_audio
@@ -226,7 +248,9 @@ class TI2VidTwoStagesPipeline:
 def main() -> None:
     parser = utils.default_2_stage_arg_parser()
     args = parser.parse_args()
-    lora_strengths = (args.lora_strength + [DEFAULT_LORA_STRENGTH] * len(args.lora))[: len(args.lora)]
+    lora_strengths = (args.lora_strength + [DEFAULT_LORA_STRENGTH] * len(args.lora))[
+        : len(args.lora)
+    ]
     loras = [
         LoraPathStrengthAndSDOps(lora, strength, LTXV_LORA_COMFY_RENAMING_MAP)
         for lora, strength in zip(args.lora, lora_strengths, strict=True)

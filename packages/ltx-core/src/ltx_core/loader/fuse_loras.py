@@ -7,7 +7,9 @@ from ltx_core.loader.primitives import LoraStateDictWithStrength, StateDict
 BLOCK_SIZE = 1024
 
 
-def fused_add_round_launch(target_weight: torch.Tensor, original_weight: torch.Tensor, seed: int) -> torch.Tensor:
+def fused_add_round_launch(
+    target_weight: torch.Tensor, original_weight: torch.Tensor, seed: int
+) -> torch.Tensor:
     if original_weight.dtype == torch.float8_e4m3fn:
         exponent_bits, mantissa_bits, exponent_bias = 4, 3, 7
     elif original_weight.dtype == torch.float8_e5m2:
@@ -35,14 +37,21 @@ def fused_add_round_launch(target_weight: torch.Tensor, original_weight: torch.T
     return target_weight
 
 
-def calculate_weight_float8_(target_weights: torch.Tensor, original_weights: torch.Tensor) -> torch.Tensor:
-    result = fused_add_round_launch(target_weights, original_weights, seed=0).to(target_weights.dtype)
+def calculate_weight_float8_(
+    target_weights: torch.Tensor, original_weights: torch.Tensor
+) -> torch.Tensor:
+    result = fused_add_round_launch(target_weights, original_weights, seed=0).to(
+        target_weights.dtype
+    )
     target_weights.copy_(result, non_blocking=True)
     return target_weights
 
 
 def _prepare_deltas(
-    lora_sd_and_strengths: list[LoraStateDictWithStrength], key: str, dtype: torch.dtype, device: torch.device
+    lora_sd_and_strengths: list[LoraStateDictWithStrength],
+    key: str,
+    dtype: torch.dtype,
+    device: torch.device,
 ) -> torch.Tensor | None:
     deltas = []
     prefix = key[: -len(".weight")]
@@ -77,7 +86,11 @@ def apply_loras(
             continue
         device = weight.device
         target_dtype = dtype if dtype is not None else weight.dtype
-        deltas_dtype = target_dtype if target_dtype not in [torch.float8_e4m3fn, torch.float8_e5m2] else torch.bfloat16
+        deltas_dtype = (
+            target_dtype
+            if target_dtype not in [torch.float8_e4m3fn, torch.float8_e5m2]
+            else torch.bfloat16
+        )
         deltas = _prepare_deltas(lora_sd_and_strengths, key, deltas_dtype, device)
         if deltas is None:
             if key in sd:

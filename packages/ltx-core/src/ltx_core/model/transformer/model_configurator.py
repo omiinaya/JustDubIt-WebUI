@@ -51,8 +51,12 @@ class LTXModelConfigurator(ModelConfigurator[LTXModel]):
             norm_eps=config.get("norm_eps", 1e-06),
             attention_type=AttentionFunction(config.get("attention_type", "default")),
             caption_channels=config.get("caption_channels", 3840),
-            positional_embedding_theta=config.get("positional_embedding_theta", 10000.0),
-            positional_embedding_max_pos=config.get("positional_embedding_max_pos", [20, 2048, 2048]),
+            positional_embedding_theta=config.get(
+                "positional_embedding_theta", 10000.0
+            ),
+            positional_embedding_max_pos=config.get(
+                "positional_embedding_max_pos", [20, 2048, 2048]
+            ),
             timestep_scale_multiplier=config.get("timestep_scale_multiplier", 1000),
             use_middle_indices_grid=config.get("use_middle_indices_grid", True),
             audio_num_attention_heads=config.get("audio_num_attention_heads", 32),
@@ -60,10 +64,15 @@ class LTXModelConfigurator(ModelConfigurator[LTXModel]):
             audio_in_channels=config.get("audio_in_channels", 128),
             audio_out_channels=config.get("audio_out_channels", 128),
             audio_cross_attention_dim=config.get("audio_cross_attention_dim", 2048),
-            audio_positional_embedding_max_pos=config.get("audio_positional_embedding_max_pos", [20]),
-            av_ca_timestep_scale_multiplier=config.get("av_ca_timestep_scale_multiplier", 1),
+            audio_positional_embedding_max_pos=config.get(
+                "audio_positional_embedding_max_pos", [20]
+            ),
+            av_ca_timestep_scale_multiplier=config.get(
+                "av_ca_timestep_scale_multiplier", 1
+            ),
             rope_type=LTXRopeType(config.get("rope_type", "interleaved")),
-            double_precision_rope=config.get("frequencies_precision", False) == "float64",
+            double_precision_rope=config.get("frequencies_precision", False)
+            == "float64",
         )
 
 
@@ -105,16 +114,23 @@ class LTXVideoOnlyModelConfigurator(ModelConfigurator[LTXModel]):
             norm_eps=config.get("norm_eps", 1e-06),
             attention_type=AttentionFunction(config.get("attention_type", "default")),
             caption_channels=config.get("caption_channels", 3840),
-            positional_embedding_theta=config.get("positional_embedding_theta", 10000.0),
-            positional_embedding_max_pos=config.get("positional_embedding_max_pos", [20, 2048, 2048]),
+            positional_embedding_theta=config.get(
+                "positional_embedding_theta", 10000.0
+            ),
+            positional_embedding_max_pos=config.get(
+                "positional_embedding_max_pos", [20, 2048, 2048]
+            ),
             timestep_scale_multiplier=config.get("timestep_scale_multiplier", 1000),
             use_middle_indices_grid=config.get("use_middle_indices_grid", True),
             rope_type=LTXRopeType(config.get("rope_type", "interleaved")),
-            double_precision_rope=config.get("frequencies_precision", False) == "float64",
+            double_precision_rope=config.get("frequencies_precision", False)
+            == "float64",
         )
 
 
-def _naive_weight_or_bias_downcast(key: str, value: torch.Tensor) -> list[KeyValueOperationResult]:
+def _naive_weight_or_bias_downcast(
+    key: str, value: torch.Tensor
+) -> list[KeyValueOperationResult]:
     """
     Downcast the weight or bias to the float8_e4m3fn dtype.
     """
@@ -122,7 +138,10 @@ def _naive_weight_or_bias_downcast(key: str, value: torch.Tensor) -> list[KeyVal
 
 
 def _upcast_and_round(
-    weight: torch.Tensor, dtype: torch.dtype, with_stochastic_rounding: bool = False, seed: int = 0
+    weight: torch.Tensor,
+    dtype: torch.dtype,
+    with_stochastic_rounding: bool = False,
+    seed: int = 0,
 ) -> torch.Tensor:
     """
     Upcast the weight to the given dtype and optionally apply stochastic rounding.
@@ -133,7 +152,9 @@ def _upcast_and_round(
     return fused_add_round_launch(torch.zeros_like(weight, dtype=dtype), weight, seed)
 
 
-def replace_fwd_with_upcast(layer: torch.nn.Linear, with_stochastic_rounding: bool = False, seed: int = 0) -> None:
+def replace_fwd_with_upcast(
+    layer: torch.nn.Linear, with_stochastic_rounding: bool = False, seed: int = 0
+) -> None:
     """
     Replace linear.forward and rms_norm.forward with a version that:
       - upcasts weight and bias to input's dtype
@@ -149,7 +170,9 @@ def replace_fwd_with_upcast(layer: torch.nn.Linear, with_stochastic_rounding: bo
         b_up = None
 
         if layer.bias is not None:
-            b_up = _upcast_and_round(layer.bias, x.dtype, with_stochastic_rounding, seed)
+            b_up = _upcast_and_round(
+                layer.bias, x.dtype, with_stochastic_rounding, seed
+            )
 
         return torch.nn.functional.linear(x, w_up, b_up)
 
@@ -180,40 +203,64 @@ LTXV_MODEL_COMFY_RENAMING_WITH_TRANSFORMER_LINEAR_DOWNCAST_MAP = (
     .with_matching(prefix="model.diffusion_model.")
     .with_replacement("model.diffusion_model.", "")
     .with_kv_operation(
-        key_prefix="transformer_blocks.", key_suffix=".to_q.weight", operation=_naive_weight_or_bias_downcast
+        key_prefix="transformer_blocks.",
+        key_suffix=".to_q.weight",
+        operation=_naive_weight_or_bias_downcast,
     )
     .with_kv_operation(
-        key_prefix="transformer_blocks.", key_suffix=".to_q.bias", operation=_naive_weight_or_bias_downcast
+        key_prefix="transformer_blocks.",
+        key_suffix=".to_q.bias",
+        operation=_naive_weight_or_bias_downcast,
     )
     .with_kv_operation(
-        key_prefix="transformer_blocks.", key_suffix=".to_k.weight", operation=_naive_weight_or_bias_downcast
+        key_prefix="transformer_blocks.",
+        key_suffix=".to_k.weight",
+        operation=_naive_weight_or_bias_downcast,
     )
     .with_kv_operation(
-        key_prefix="transformer_blocks.", key_suffix=".to_k.bias", operation=_naive_weight_or_bias_downcast
+        key_prefix="transformer_blocks.",
+        key_suffix=".to_k.bias",
+        operation=_naive_weight_or_bias_downcast,
     )
     .with_kv_operation(
-        key_prefix="transformer_blocks.", key_suffix=".to_v.weight", operation=_naive_weight_or_bias_downcast
+        key_prefix="transformer_blocks.",
+        key_suffix=".to_v.weight",
+        operation=_naive_weight_or_bias_downcast,
     )
     .with_kv_operation(
-        key_prefix="transformer_blocks.", key_suffix=".to_v.bias", operation=_naive_weight_or_bias_downcast
+        key_prefix="transformer_blocks.",
+        key_suffix=".to_v.bias",
+        operation=_naive_weight_or_bias_downcast,
     )
     .with_kv_operation(
-        key_prefix="transformer_blocks.", key_suffix=".to_out.0.weight", operation=_naive_weight_or_bias_downcast
+        key_prefix="transformer_blocks.",
+        key_suffix=".to_out.0.weight",
+        operation=_naive_weight_or_bias_downcast,
     )
     .with_kv_operation(
-        key_prefix="transformer_blocks.", key_suffix=".to_out.0.bias", operation=_naive_weight_or_bias_downcast
+        key_prefix="transformer_blocks.",
+        key_suffix=".to_out.0.bias",
+        operation=_naive_weight_or_bias_downcast,
     )
     .with_kv_operation(
-        key_prefix="transformer_blocks.", key_suffix=".ff.net.0.proj.weight", operation=_naive_weight_or_bias_downcast
+        key_prefix="transformer_blocks.",
+        key_suffix=".ff.net.0.proj.weight",
+        operation=_naive_weight_or_bias_downcast,
     )
     .with_kv_operation(
-        key_prefix="transformer_blocks.", key_suffix=".ff.net.0.proj.bias", operation=_naive_weight_or_bias_downcast
+        key_prefix="transformer_blocks.",
+        key_suffix=".ff.net.0.proj.bias",
+        operation=_naive_weight_or_bias_downcast,
     )
     .with_kv_operation(
-        key_prefix="transformer_blocks.", key_suffix=".ff.net.2.weight", operation=_naive_weight_or_bias_downcast
+        key_prefix="transformer_blocks.",
+        key_suffix=".ff.net.2.weight",
+        operation=_naive_weight_or_bias_downcast,
     )
     .with_kv_operation(
-        key_prefix="transformer_blocks.", key_suffix=".ff.net.2.bias", operation=_naive_weight_or_bias_downcast
+        key_prefix="transformer_blocks.",
+        key_suffix=".ff.net.2.bias",
+        operation=_naive_weight_or_bias_downcast,
     )
 )
 

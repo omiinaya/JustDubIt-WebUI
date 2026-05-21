@@ -10,7 +10,9 @@ from ltx_core.text_encoders.gemma.embeddings_connector import (
     Embeddings1DConnectorConfigurator,
 )
 from ltx_core.text_encoders.gemma.encoders.base_encoder import GemmaTextEncoderModelBase
-from ltx_core.text_encoders.gemma.feature_extractor import GemmaFeaturesExtractorProjLinear
+from ltx_core.text_encoders.gemma.feature_extractor import (
+    GemmaFeaturesExtractorProjLinear,
+)
 from ltx_core.text_encoders.gemma.tokenizer import LTXVGemmaTokenizer
 
 
@@ -46,7 +48,9 @@ class VideoGemmaTextEncoderModel(GemmaTextEncoderModelBase):
     def _run_connector(
         self, encoded_input: torch.Tensor, attention_mask: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        connector_attention_mask = self._convert_to_additive_mask(attention_mask, encoded_input.dtype)
+        connector_attention_mask = self._convert_to_additive_mask(
+            attention_mask, encoded_input.dtype
+        )
 
         encoded, encoded_connector_attention_mask = self.embeddings_connector(
             encoded_input,
@@ -62,11 +66,15 @@ class VideoGemmaTextEncoderModel(GemmaTextEncoderModelBase):
 
     def forward(self, text: str, padding_side: str = "left") -> VideoGemmaEncoderOutput:
         encoded_inputs, attention_mask = self._preprocess_text(text, padding_side)
-        video_encoding, attention_mask = self._run_connector(encoded_inputs, attention_mask)
+        video_encoding, attention_mask = self._run_connector(
+            encoded_inputs, attention_mask
+        )
         return VideoGemmaEncoderOutput(video_encoding, attention_mask)
 
 
-class VideoGemmaTextEncoderModelConfigurator(ModelConfigurator[VideoGemmaTextEncoderModel]):
+class VideoGemmaTextEncoderModelConfigurator(
+    ModelConfigurator[VideoGemmaTextEncoderModel]
+):
     @classmethod
     def from_config(cls: type[Self], config: dict) -> Self:
         feature_extractor_linear = GemmaFeaturesExtractorProjLinear.from_config(config)
@@ -82,5 +90,7 @@ VIDEO_ONLY_GEMMA_TEXT_ENCODER_KEY_OPS = (
     .with_matching(prefix="text_embedding_projection.")
     .with_matching(prefix="model.diffusion_model.embeddings_connector.")
     .with_replacement("text_embedding_projection.", "feature_extractor_linear.")
-    .with_replacement("model.diffusion_model.embeddings_connector.", "embeddings_connector.")
+    .with_replacement(
+        "model.diffusion_model.embeddings_connector.", "embeddings_connector."
+    )
 )

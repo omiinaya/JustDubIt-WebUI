@@ -20,7 +20,13 @@ class Upsample(torch.nn.Module):
         self.with_conv = with_conv
         self.causality_axis = causality_axis
         if self.with_conv:
-            self.conv = make_conv2d(in_channels, in_channels, kernel_size=3, stride=1, causality_axis=causality_axis)
+            self.conv = make_conv2d(
+                in_channels,
+                in_channels,
+                kernel_size=3,
+                stride=1,
+                causality_axis=causality_axis,
+            )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = torch.nn.functional.interpolate(x, scale_factor=2.0, mode="nearest")
@@ -95,10 +101,14 @@ def build_upsampling_path(  # noqa: PLR0913
             )
             block_in = block_out
             if curr_res in attn_resolutions:
-                stage.attn.append(make_attn(block_in, attn_type=attn_type, norm_type=norm_type))
+                stage.attn.append(
+                    make_attn(block_in, attn_type=attn_type, norm_type=norm_type)
+                )
 
         if level != 0:
-            stage.upsample = Upsample(block_in, resamp_with_conv, causality_axis=causality_axis)
+            stage.upsample = Upsample(
+                block_in, resamp_with_conv, causality_axis=causality_axis
+            )
             curr_res *= 2
 
         up_modules.insert(0, stage)

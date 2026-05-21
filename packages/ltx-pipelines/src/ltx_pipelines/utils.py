@@ -4,7 +4,11 @@ from pathlib import Path
 
 import torch
 
-from ltx_core.conditioning import ConditioningItem, VideoConditionByKeyframeIndex, VideoConditionByLatentIndex
+from ltx_core.conditioning import (
+    ConditioningItem,
+    VideoConditionByKeyframeIndex,
+    VideoConditionByLatentIndex,
+)
 from ltx_core.loader import LTXV_LORA_COMFY_RENAMING_MAP, LoraPathStrengthAndSDOps
 from ltx_core.model.upsampler import LatentUpsampler
 from ltx_core.model.video_vae import Encoder as VideoEncoder
@@ -80,7 +84,9 @@ class LoraAction(argparse.Action):
         path, strength_str = values
         strength = float(strength_str)
         current = getattr(namespace, self.dest) or []
-        current.append(LoraPathStrengthAndSDOps(path, strength, LTXV_LORA_COMFY_RENAMING_MAP))
+        current.append(
+            LoraPathStrengthAndSDOps(path, strength, LTXV_LORA_COMFY_RENAMING_MAP)
+        )
         setattr(namespace, self.dest, current)
 
 
@@ -132,12 +138,16 @@ def image_conditionings_by_adding_guiding_latent(
         )
         encoded_image = video_encoder(image)
         conditionings.append(
-            VideoConditionByKeyframeIndex(keyframes=encoded_image, frame_idx=frame_idx, strength=strength)
+            VideoConditionByKeyframeIndex(
+                keyframes=encoded_image, frame_idx=frame_idx, strength=strength
+            )
         )
     return conditionings
 
 
-def upsample_video(latent: torch.Tensor, video_encoder: VideoEncoder, upsampler: LatentUpsampler) -> torch.Tensor:
+def upsample_video(
+    latent: torch.Tensor, video_encoder: VideoEncoder, upsampler: LatentUpsampler
+) -> torch.Tensor:
     latent = video_encoder.per_channel_statistics.un_normalize(latent)
     latent = upsampler(latent)
     latent = video_encoder.per_channel_statistics.normalize(latent)
@@ -155,7 +165,9 @@ def basic_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--width", type=int, default=DEFAULT_WIDTH)
     parser.add_argument("--num_frames", type=int, default=DEFAULT_NUM_FRAMES)
     parser.add_argument("--frame_rate", type=float, default=DEFAULT_FRAME_RATE)
-    parser.add_argument("--num_inference_steps", type=int, default=DEFAULT_NUM_INFERENCE_STEPS)
+    parser.add_argument(
+        "--num_inference_steps", type=int, default=DEFAULT_NUM_INFERENCE_STEPS
+    )
     parser.add_argument(
         "--image",
         dest="images",
@@ -172,7 +184,9 @@ def basic_arg_parser() -> argparse.ArgumentParser:
 
 def default_1_stage_arg_parser() -> argparse.ArgumentParser:
     parser = basic_arg_parser()
-    parser.add_argument("--cfg_guidance_scale", type=float, default=DEFAULT_CFG_GUIDANCE_SCALE)
+    parser.add_argument(
+        "--cfg_guidance_scale", type=float, default=DEFAULT_CFG_GUIDANCE_SCALE
+    )
     parser.add_argument("--negative_prompt", type=str, default=DEFAULT_NEGATIVE_PROMPT)
 
     return parser
@@ -181,7 +195,9 @@ def default_1_stage_arg_parser() -> argparse.ArgumentParser:
 def default_2_stage_arg_parser() -> argparse.ArgumentParser:
     parser = default_1_stage_arg_parser()
     parser.add_argument("--distilled_lora_path", type=resolve_path, required=True)
-    parser.add_argument("--distilled_lora_strength", type=float, default=DEFAULT_LORA_STRENGTH)
+    parser.add_argument(
+        "--distilled_lora_strength", type=float, default=DEFAULT_LORA_STRENGTH
+    )
     parser.add_argument("--spatial_upsampler_path", type=resolve_path, required=True)
     return parser
 

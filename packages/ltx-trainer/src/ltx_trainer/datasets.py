@@ -34,7 +34,9 @@ class DummyDataset(Dataset):
             raise ValueError(f"Height must be divisible by 32, got {height=}")
 
         if num_frames % 8 != 1:
-            raise ValueError(f"Number of frames must have a remainder of 1 when divided by 8, got {num_frames=}")
+            raise ValueError(
+                f"Number of frames must have a remainder of 1 when divided by 8, got {num_frames=}"
+            )
 
         self.width = width
         self.height = height
@@ -42,10 +44,14 @@ class DummyDataset(Dataset):
         self.fps = fps
         self.dataset_length = dataset_length
         self.latent_dim = latent_dim
-        self.num_latent_frames = (num_frames - 1) // latent_temporal_compression_ratio + 1
+        self.num_latent_frames = (
+            num_frames - 1
+        ) // latent_temporal_compression_ratio + 1
         self.latent_height = height // latent_spatial_compression_ratio
         self.latent_width = width // latent_spatial_compression_ratio
-        self.latent_sequence_length = self.num_latent_frames * self.latent_height * self.latent_width
+        self.latent_sequence_length = (
+            self.num_latent_frames * self.latent_height * self.latent_width
+        )
         self.prompt_embed_dim = prompt_embed_dim
         self.prompt_sequence_length = prompt_sequence_length
 
@@ -80,7 +86,9 @@ class DummyDataset(Dataset):
 
 
 class PrecomputedDataset(Dataset):
-    def __init__(self, data_root: str, data_sources: dict[str, str] | list[str] | None = None) -> None:
+    def __init__(
+        self, data_root: str, data_sources: dict[str, str] | list[str] | None = None
+    ) -> None:
         """
         Generic dataset for loading precomputed data from multiple sources.
 
@@ -128,7 +136,9 @@ class PrecomputedDataset(Dataset):
         return data_root
 
     @staticmethod
-    def _normalize_data_sources(data_sources: dict[str, str] | list[str] | None) -> dict[str, str]:
+    def _normalize_data_sources(
+        data_sources: dict[str, str] | list[str] | None,
+    ) -> dict[str, str]:
         """Normalize data_sources input to a consistent dict format."""
         if data_sources is None:
             # Default sources
@@ -139,7 +149,9 @@ class PrecomputedDataset(Dataset):
         elif isinstance(data_sources, dict):
             return data_sources.copy()
         else:
-            raise TypeError(f"data_sources must be dict, list, or None, got {type(data_sources)}")
+            raise TypeError(
+                f"data_sources must be dict, list, or None, got {type(data_sources)}"
+            )
 
     def _setup_source_paths(self) -> dict[str, Path]:
         """Map data source names to their actual directory paths."""
@@ -151,14 +163,20 @@ class PrecomputedDataset(Dataset):
 
             # Check that all sources exist.
             if not source_path.exists():
-                raise FileNotFoundError(f"Required {dir_name} directory does not exist: {source_path}")
+                raise FileNotFoundError(
+                    f"Required {dir_name} directory does not exist: {source_path}"
+                )
 
         return source_paths
 
     def _discover_samples(self) -> dict[str, list[Path]]:
         """Discover all valid sample files across all data sources."""
         # Use first data source as the reference to discover samples
-        data_key = "latents" if "latents" in self.data_sources else next(iter(self.data_sources.keys()))
+        data_key = (
+            "latents"
+            if "latents" in self.data_sources
+            else next(iter(self.data_sources.keys()))
+        )
         data_path = self.source_paths[data_key]
         data_files = list(data_path.glob("**/*.pt"))
 
@@ -190,7 +208,9 @@ class PrecomputedDataset(Dataset):
 
         return True
 
-    def _get_expected_file_path(self, dir_name: str, data_file: Path, rel_path: Path) -> Path:
+    def _get_expected_file_path(
+        self, dir_name: str, data_file: Path, rel_path: Path
+    ) -> Path:
         """Get the expected file path for a given data source."""
         source_path = self.source_paths[dir_name]
 
@@ -200,21 +220,29 @@ class PrecomputedDataset(Dataset):
 
         return source_path / rel_path
 
-    def _fill_sample_data_files(self, data_file: Path, rel_path: Path, sample_files: dict[str, list[Path]]) -> None:
+    def _fill_sample_data_files(
+        self, data_file: Path, rel_path: Path, sample_files: dict[str, list[Path]]
+    ) -> None:
         """Add a valid sample to the sample_files tracking."""
         for dir_name, output_key in self.data_sources.items():
             expected_path = self._get_expected_file_path(dir_name, data_file, rel_path)
-            sample_files[output_key].append(expected_path.relative_to(self.source_paths[dir_name]))
+            sample_files[output_key].append(
+                expected_path.relative_to(self.source_paths[dir_name])
+            )
 
     def _validate_setup(self) -> None:
         """Validate that the dataset setup is correct."""
         if not self.sample_files:
-            raise ValueError("No valid samples found - all data sources must have matching files")
+            raise ValueError(
+                "No valid samples found - all data sources must have matching files"
+            )
 
         # Verify all output keys have the same number of samples
         sample_counts = {key: len(files) for key, files in self.sample_files.items()}
         if len(set(sample_counts.values())) > 1:
-            raise ValueError(f"Mismatched sample counts across sources: {sample_counts}")
+            raise ValueError(
+                f"Mismatched sample counts across sources: {sample_counts}"
+            )
 
     def __len__(self) -> int:
         # Use the first output key as reference count
@@ -238,7 +266,9 @@ class PrecomputedDataset(Dataset):
 
                 result[output_key] = data
             except Exception as e:
-                raise RuntimeError(f"Failed to load {output_key} from {file_path}: {e}") from e
+                raise RuntimeError(
+                    f"Failed to load {output_key} from {file_path}: {e}"
+                ) from e
 
         # Add index for debugging
         result["idx"] = index

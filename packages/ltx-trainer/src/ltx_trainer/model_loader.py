@@ -95,8 +95,12 @@ def load_video_vae_encoder(
         Loaded VideoVAEEncoder
     """
     from ltx_core.loader.single_gpu_model_builder import SingleGPUModelBuilder
-    from ltx_core.model.video_vae.model_configurator import VAE_ENCODER_COMFY_KEYS_FILTER
-    from ltx_core.model.video_vae.model_configurator import VAEEncoderConfigurator as VideoVAEEncoderConfigurator
+    from ltx_core.model.video_vae.model_configurator import (
+        VAE_ENCODER_COMFY_KEYS_FILTER,
+    )
+    from ltx_core.model.video_vae.model_configurator import (
+        VAEEncoderConfigurator as VideoVAEEncoderConfigurator,
+    )
 
     return SingleGPUModelBuilder(
         model_path=str(checkpoint_path),
@@ -121,8 +125,12 @@ def load_video_vae_decoder(
         Loaded VideoVAEDecoder
     """
     from ltx_core.loader.single_gpu_model_builder import SingleGPUModelBuilder
-    from ltx_core.model.video_vae.model_configurator import VAE_DECODER_COMFY_KEYS_FILTER
-    from ltx_core.model.video_vae.model_configurator import VAEDecoderConfigurator as VideoVAEDecoderConfigurator
+    from ltx_core.model.video_vae.model_configurator import (
+        VAE_DECODER_COMFY_KEYS_FILTER,
+    )
+    from ltx_core.model.video_vae.model_configurator import (
+        VAEDecoderConfigurator as VideoVAEDecoderConfigurator,
+    )
 
     return SingleGPUModelBuilder(
         model_path=str(checkpoint_path),
@@ -148,7 +156,9 @@ def load_audio_vae_encoder(
     """
     from ltx_core.loader import SingleGPUModelBuilder
     from ltx_core.model.audio_vae import AUDIO_VAE_ENCODER_COMFY_KEYS_FILTER
-    from ltx_core.model.audio_vae import VAEEncoderConfigurator as AudioVAEEncoderConfigurator
+    from ltx_core.model.audio_vae import (
+        VAEEncoderConfigurator as AudioVAEEncoderConfigurator,
+    )
 
     return SingleGPUModelBuilder(
         model_path=str(checkpoint_path),
@@ -174,7 +184,9 @@ def load_audio_vae_decoder(
     """
     from ltx_core.loader import SingleGPUModelBuilder
     from ltx_core.model.audio_vae import AUDIO_VAE_DECODER_COMFY_KEYS_FILTER
-    from ltx_core.model.audio_vae import VAEDecoderConfigurator as AudioVAEDecoderConfigurator
+    from ltx_core.model.audio_vae import (
+        VAEDecoderConfigurator as AudioVAEDecoderConfigurator,
+    )
 
     return SingleGPUModelBuilder(
         model_path=str(checkpoint_path),
@@ -230,7 +242,9 @@ def load_text_encoder(
         AV_GEMMA_TEXT_ENCODER_KEY_OPS,
         AVGemmaTextEncoderModelConfigurator,
     )
-    from ltx_core.text_encoders.gemma.encoders.base_encoder import module_ops_from_gemma_root
+    from ltx_core.text_encoders.gemma.encoders.base_encoder import (
+        module_ops_from_gemma_root,
+    )
 
     if not Path(gemma_model_path).is_dir():
         raise ValueError(f"Gemma model path is not a directory: {gemma_model_path}")
@@ -368,9 +382,13 @@ def load_model(  # noqa: PLR0913
     text_encoder = None
     if with_text_encoder:
         if text_encoder_path is None:
-            raise ValueError("text_encoder_path must be provided when with_text_encoder=True")
+            raise ValueError(
+                "text_encoder_path must be provided when with_text_encoder=True"
+            )
         logger.debug("Loading Gemma text encoder...")
-        text_encoder = load_text_encoder(checkpoint_path, text_encoder_path, torch_device, dtype)
+        text_encoder = load_text_encoder(
+            checkpoint_path, text_encoder_path, torch_device, dtype
+        )
 
     # Create scheduler (stateless, no loading needed)
     scheduler = LTX2Scheduler()

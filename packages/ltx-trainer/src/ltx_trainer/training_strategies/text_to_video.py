@@ -140,17 +140,23 @@ class TextToVideoStrategy(TrainingStrategy):
 
         # Apply noise: noisy = (1 - sigma) * clean + sigma * noise
         sigmas_expanded = sigmas.view(-1, 1, 1)
-        noisy_video = (1 - sigmas_expanded) * video_latents + sigmas_expanded * video_noise
+        noisy_video = (
+            1 - sigmas_expanded
+        ) * video_latents + sigmas_expanded * video_noise
 
         # For conditioning tokens, use clean latents
         conditioning_mask_expanded = video_conditioning_mask.unsqueeze(-1)
-        noisy_video = torch.where(conditioning_mask_expanded, video_latents, noisy_video)
+        noisy_video = torch.where(
+            conditioning_mask_expanded, video_latents, noisy_video
+        )
 
         # Compute video targets (velocity prediction)
         video_targets = video_noise - video_latents
 
         # Create per-token timesteps
-        video_timesteps = self._create_per_token_timesteps(video_conditioning_mask, sigmas.squeeze())
+        video_timesteps = self._create_per_token_timesteps(
+            video_conditioning_mask, sigmas.squeeze()
+        )
 
         # Generate video positions using ltx_core's native implementation
         video_positions = self._get_video_positions(
@@ -239,7 +245,9 @@ class TextToVideoStrategy(TrainingStrategy):
 
         # Apply noise to audio (same sigma as video)
         sigmas_expanded = sigmas.view(-1, 1, 1)
-        noisy_audio = (1 - sigmas_expanded) * audio_latents + sigmas_expanded * audio_noise
+        noisy_audio = (
+            1 - sigmas_expanded
+        ) * audio_latents + sigmas_expanded * audio_noise
 
         # Compute audio targets
         audio_targets = audio_noise - audio_latents
@@ -266,7 +274,9 @@ class TextToVideoStrategy(TrainingStrategy):
         )
 
         # Audio loss mask: all tokens contribute to loss (no conditioning)
-        audio_loss_mask = torch.ones(batch_size, audio_seq_len, dtype=torch.bool, device=device)
+        audio_loss_mask = torch.ones(
+            batch_size, audio_seq_len, dtype=torch.bool, device=device
+        )
 
         return audio_modality, audio_targets, audio_loss_mask
 
@@ -284,7 +294,11 @@ class TextToVideoStrategy(TrainingStrategy):
         video_loss = video_loss.mean()
 
         # If no audio, return video loss only
-        if not self.config.with_audio or audio_pred is None or inputs.audio_targets is None:
+        if (
+            not self.config.with_audio
+            or audio_pred is None
+            or inputs.audio_targets is None
+        ):
             return video_loss
 
         # Audio loss (no conditioning mask)

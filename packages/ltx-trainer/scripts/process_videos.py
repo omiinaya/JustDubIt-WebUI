@@ -123,7 +123,9 @@ class MediaDataset(Dataset):
         self.transforms = transforms.Compose(
             [
                 transforms.Lambda(lambda x: x.clamp_(0, 1)),
-                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+                transforms.Normalize(
+                    mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True
+                ),
             ]
         )
 
@@ -182,7 +184,9 @@ class MediaDataset(Dataset):
         return result
 
     @staticmethod
-    def _extract_audio(video_path: Path, target_duration: float) -> dict[str, torch.Tensor | int] | None:
+    def _extract_audio(
+        video_path: Path, target_duration: float
+    ) -> dict[str, torch.Tensor | int] | None:
         """Extract audio track from a video file, trimmed to match video duration."""
         try:
             # torchaudio can extract audio from video files directly
@@ -200,7 +204,9 @@ class MediaDataset(Dataset):
                 # Pad with zeros to target duration
                 padding = target_samples - current_samples
                 waveform = torch.nn.functional.pad(waveform, (0, padding))
-                logger.warning(f"Padded audio to {target_duration:.2f} seconds for {video_path}")
+                logger.warning(
+                    f"Padded audio to {target_duration:.2f} seconds for {video_path}"
+                )
 
             return {"waveform": waveform, "sample_rate": sample_rate}
 
@@ -217,7 +223,9 @@ class MediaDataset(Dataset):
         elif self.dataset_file.suffix == ".jsonl":
             return self._load_video_paths_from_jsonl(column)
         else:
-            raise ValueError("Expected `dataset_file` to be a path to a CSV, JSON, or JSONL file.")
+            raise ValueError(
+                "Expected `dataset_file` to be a path to a CSV, JSON, or JSONL file."
+            )
 
     def _load_video_paths_from_csv(self, column: str) -> list[Path]:
         """Load video paths from a CSV file."""
@@ -231,7 +239,9 @@ class MediaDataset(Dataset):
         # Validate that all paths exist
         invalid_paths = [path for path in video_paths if not path.is_file()]
         if invalid_paths:
-            raise ValueError(f"Found {len(invalid_paths)} invalid video paths. First few: {invalid_paths[:5]}")
+            raise ValueError(
+                f"Found {len(invalid_paths)} invalid video paths. First few: {invalid_paths[:5]}"
+            )
 
         return video_paths
 
@@ -253,7 +263,9 @@ class MediaDataset(Dataset):
         # Validate that all paths exist
         invalid_paths = [path for path in video_paths if not path.is_file()]
         if invalid_paths:
-            raise ValueError(f"Found {len(invalid_paths)} invalid video paths. First few: {invalid_paths[:5]}")
+            raise ValueError(
+                f"Found {len(invalid_paths)} invalid video paths. First few: {invalid_paths[:5]}"
+            )
 
         return video_paths
 
@@ -271,7 +283,9 @@ class MediaDataset(Dataset):
         # Validate that all paths exist
         invalid_paths = [path for path in video_paths if not path.is_file()]
         if invalid_paths:
-            raise ValueError(f"Found {len(invalid_paths)} invalid video paths. First few: {invalid_paths[:5]}")
+            raise ValueError(
+                f"Found {len(invalid_paths)} invalid video paths. First few: {invalid_paths[:5]}"
+            )
 
         return video_paths
 
@@ -316,7 +330,9 @@ class MediaDataset(Dataset):
         """Preprocess a single image by resizing and applying transforms."""
         image = open_image_as_srgb(path)
         image = to_tensor(image)
-        image = image.unsqueeze(0)  # Add frame dimension [1, C, H, W] for bucket selection
+        image = image.unsqueeze(
+            0
+        )  # Add frame dimension [1, C, H, W] for bucket selection
 
         # Find nearest resolution bucket and resize
         nearest_bucket = self._get_resolution_bucket_for_item(image)
@@ -356,7 +372,9 @@ class MediaDataset(Dataset):
 
         return video, fps
 
-    def _get_resolution_bucket_for_item(self, media_tensor: torch.Tensor) -> tuple[int, int, int]:
+    def _get_resolution_bucket_for_item(
+        self, media_tensor: torch.Tensor
+    ) -> tuple[int, int, int]:
         """Get the nearest resolution bucket for the given media tensor."""
         num_frames, _, height, width = media_tensor.shape
 
@@ -375,14 +393,18 @@ class MediaDataset(Dataset):
         # Keep only buckets with <= available frames
         relevant_buckets = [b for b in self.resolution_buckets if b[0] <= num_frames]
         if not relevant_buckets:
-            raise ValueError(f"No resolution buckets have <= {num_frames} frames. Available: {self.resolution_buckets}")
+            raise ValueError(
+                f"No resolution buckets have <= {num_frames} frames. Available: {self.resolution_buckets}"
+            )
 
         # Find the bucket with the minimal distance (according to the function above) to the media item's shape.
         nearest_bucket = min(relevant_buckets, key=distance)
 
         return nearest_bucket
 
-    def _resize_and_crop(self, media_tensor: torch.Tensor, target_height: int, target_width: int) -> torch.Tensor:
+    def _resize_and_crop(
+        self, media_tensor: torch.Tensor, target_height: int, target_width: int
+    ) -> torch.Tensor:
         """Resize and crop tensor to target size."""
         # Get current dimensions
         current_height, current_width = media_tensor.shape[2], media_tensor.shape[3]
@@ -429,7 +451,9 @@ class MediaDataset(Dataset):
             raise ValueError(f"Unsupported reshape mode: {self.reshape_mode}")
 
         # Perform the final crop to exact target dimensions
-        media_tensor = crop(media_tensor, top=top, left=left, height=target_height, width=target_width)
+        media_tensor = crop(
+            media_tensor, top=top, left=left, height=target_height, width=target_width
+        )
         return media_tensor
 
 
@@ -492,7 +516,11 @@ class MaskDataset(MediaDataset):
         attempted_indices = set()
 
         for attempt in range(max_retries):
-            current_index = index if attempt == 0 else (index + attempt) % len(self.main_media_paths)
+            current_index = (
+                index
+                if attempt == 0
+                else (index + attempt) % len(self.main_media_paths)
+            )
 
             # Avoid infinite loops by tracking attempted indices
             if current_index in attempted_indices:
@@ -527,13 +555,19 @@ class MaskDataset(MediaDataset):
                     },
                 }
             except Exception as e:
-                logger.warning(f"Failed to load mask file {mask_path} (attempt {attempt + 1}/{max_retries}): {e}")
+                logger.warning(
+                    f"Failed to load mask file {mask_path} (attempt {attempt + 1}/{max_retries}): {e}"
+                )
                 # Continue to next attempt
                 continue
 
         # If all retries failed, raise an error
-        logger.error(f"Failed to load any valid mask after {max_retries} attempts starting from index {index}")
-        raise RuntimeError(f"Could not load any valid mask sample after {max_retries} attempts")
+        logger.error(
+            f"Failed to load any valid mask after {max_retries} attempts starting from index {index}"
+        )
+        raise RuntimeError(
+            f"Could not load any valid mask sample after {max_retries} attempts"
+        )
 
     def _preprocess_mask(self, path: Path) -> torch.Tensor:
         """Preprocess a mask video by loading, resizing, and converting to latent dimensions."""
@@ -596,7 +630,9 @@ class MaskDataset(MediaDataset):
         # Use rearrange to group frames for temporal reduction
         # Reshape remaining frames: [T-1, H, W] -> [target_remaining, 8, H, W]
         # This will work if (T-1) is divisible by target_remaining and gives us groups of 8
-        grouped_frames = rearrange(remaining_frames, "(g x) h w -> g x h w", g=target_remaining, x=8)
+        grouped_frames = rearrange(
+            remaining_frames, "(g x) h w -> g x h w", g=target_remaining, x=8
+        )
 
         # Apply temporal reduction
         if reduce_type == "max":
@@ -638,7 +674,9 @@ def decode_masks_folder(masks_dir: Path, output_dir: Path) -> None:
             try:
                 data = torch.load(masks_file, map_location="cpu")
                 decoded_masks = decode_mask(
-                    data["masks"], data["height"] * VAE_SPATIAL_FACTOR, data["width"] * VAE_SPATIAL_FACTOR
+                    data["masks"],
+                    data["height"] * VAE_SPATIAL_FACTOR,
+                    data["width"] * VAE_SPATIAL_FACTOR,
                 )
                 mask_video = (decoded_masks * 255).round().clamp(0, 255).to(torch.uint8)
 
@@ -776,7 +814,9 @@ def compute_mask_latents(
     output_path.mkdir(parents=True, exist_ok=True)
 
     # Create dataloader - use single worker to avoid multiprocessing issues with corrupted files
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=4)
+    dataloader = DataLoader(
+        dataset, batch_size=batch_size, shuffle=False, num_workers=4
+    )
 
     # Process batches
     with Progress(
@@ -812,7 +852,9 @@ def compute_mask_latents(
                     output_file.parent.mkdir(parents=True, exist_ok=True)
 
                     mask_data = {
-                        "masks": batch["mask"][i].cpu().contiguous(),  # [T, H, W] in VAE latent dimensions
+                        "masks": batch["mask"][i]
+                        .cpu()
+                        .contiguous(),  # [T, H, W] in VAE latent dimensions
                         "num_frames": batch["mask_metadata"]["num_frames"][i].item(),
                         "height": batch["mask_metadata"]["height"][i].item(),
                         "width": batch["mask_metadata"]["width"][i].item(),
@@ -888,8 +930,12 @@ def compute_latents(  # noqa: PLR0913, PLR0915
         audio_output_path.mkdir(parents=True, exist_ok=True)
 
     # Load video VAE encoder
-    with console.status(f"[bold]Loading video VAE encoder from [cyan]{model_path}[/]...", spinner="dots"):
-        vae = load_video_vae_encoder(model_path, device=torch_device, dtype=torch.bfloat16)
+    with console.status(
+        f"[bold]Loading video VAE encoder from [cyan]{model_path}[/]...", spinner="dots"
+    ):
+        vae = load_video_vae_encoder(
+            model_path, device=torch_device, dtype=torch.bfloat16
+        )
 
     if vae_tiling:
         vae.enable_tiling()
@@ -898,7 +944,10 @@ def compute_latents(  # noqa: PLR0913, PLR0915
     audio_vae_encoder = None
     audio_processor = None
     if with_audio:
-        with console.status(f"[bold]Loading audio VAE encoder from [cyan]{model_path}[/]...", spinner="dots"):
+        with console.status(
+            f"[bold]Loading audio VAE encoder from [cyan]{model_path}[/]...",
+            spinner="dots",
+        ):
             audio_vae_encoder = load_audio_vae_encoder(
                 checkpoint_path=model_path,
                 device=torch_device,
@@ -916,9 +965,13 @@ def compute_latents(  # noqa: PLR0913, PLR0915
     # Note: batch_size=1 required when with_audio because audio extraction can fail for some videos,
     # and the default collate function can't handle mixed None/dict values across a batch.
     if with_audio and batch_size > 1:
-        logger.warning("Audio processing requires batch_size=1. Overriding batch_size to 1.")
+        logger.warning(
+            "Audio processing requires batch_size=1. Overriding batch_size to 1."
+        )
         batch_size = 1
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=4)
+    dataloader = DataLoader(
+        dataset, batch_size=batch_size, shuffle=False, num_workers=4
+    )
 
     # Track audio statistics
     audio_success_count = 0
@@ -947,7 +1000,9 @@ def compute_latents(  # noqa: PLR0913, PLR0915
 
             # Save latents for each item in batch
             for i in range(len(batch["relative_path"])):
-                output_rel_path = Path(batch["main_media_relative_path"][i]).with_suffix(".pt")
+                output_rel_path = Path(
+                    batch["main_media_relative_path"][i]
+                ).with_suffix(".pt")
                 output_file = output_path / output_rel_path
 
                 # Create output directory maintaining structure
@@ -955,7 +1010,9 @@ def compute_latents(  # noqa: PLR0913, PLR0915
 
                 # Index into batch to get this item's latents
                 latent_data = {
-                    "latents": video_latent_data["latents"][i].cpu().contiguous(),  # [C, F', H', W']
+                    "latents": video_latent_data["latents"][i]
+                    .cpu()
+                    .contiguous(),  # [C, F', H', W']
                     "num_frames": video_latent_data["num_frames"],
                     "height": video_latent_data["height"],
                     "width": video_latent_data["width"],
@@ -977,7 +1034,9 @@ def compute_latents(  # noqa: PLR0913, PLR0915
 
                         # Encode audio
                         with torch.inference_mode():
-                            audio_latents = encode_audio(audio_vae_encoder, audio_processor, audio_data)
+                            audio_latents = encode_audio(
+                                audio_vae_encoder, audio_processor, audio_data
+                            )
 
                         # Save audio latents
                         audio_output_file = audio_output_path / output_rel_path
@@ -1089,7 +1148,9 @@ def encode_audio(
     duration = waveform.shape[-1] / sample_rate
 
     # Convert waveform to mel spectrogram using AudioProcessor
-    mel_spectrogram = audio_processor.waveform_to_mel(waveform, waveform_sample_rate=sample_rate)
+    mel_spectrogram = audio_processor.waveform_to_mel(
+        waveform, waveform_sample_rate=sample_rate
+    )
     mel_spectrogram = mel_spectrogram.to(dtype=dtype)
 
     if mel_spectrogram.shape[1] == 1:
@@ -1244,7 +1305,9 @@ def main(  # noqa: PLR0913
 
     # Validate audio parameters
     if with_audio and audio_output_dir is None:
-        raise typer.BadParameter("--audio-output-dir is required when --with-audio is set")
+        raise typer.BadParameter(
+            "--audio-output-dir is required when --with-audio is set"
+        )
 
     # Parse resolution buckets
     parsed_resolution_buckets = parse_resolution_buckets(resolution_buckets)

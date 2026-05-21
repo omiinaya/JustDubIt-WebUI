@@ -154,7 +154,9 @@ class CaptionsDataset(Dataset):
         elif self.dataset_file.suffix == ".jsonl":
             return self._load_caption_data_from_jsonl()
         else:
-            raise ValueError("Expected `dataset_file` to be a path to a CSV, JSON, or JSONL file.")
+            raise ValueError(
+                "Expected `dataset_file` to be a path to a CSV, JSON, or JSONL file."
+            )
 
     def _load_caption_data_from_csv(self) -> dict[str, str]:
         """Load captions from a CSV file and compute output embedding paths."""
@@ -185,9 +187,13 @@ class CaptionsDataset(Dataset):
         caption_data = {}
         for entry in data:
             if self.caption_column not in entry:
-                raise ValueError(f"Key '{self.caption_column}' not found in JSON entry: {entry}")
+                raise ValueError(
+                    f"Key '{self.caption_column}' not found in JSON entry: {entry}"
+                )
             if self.media_column not in entry:
-                raise ValueError(f"Key '{self.media_column}' not found in JSON entry: {entry}")
+                raise ValueError(
+                    f"Key '{self.media_column}' not found in JSON entry: {entry}"
+                )
 
             media_path = Path(entry[self.media_column].strip())
             # Convert media path to embedding output path (same structure, .pt extension)
@@ -203,9 +209,13 @@ class CaptionsDataset(Dataset):
             for line in file:
                 entry = json.loads(line)
                 if self.caption_column not in entry:
-                    raise ValueError(f"Key '{self.caption_column}' not found in JSONL entry: {entry}")
+                    raise ValueError(
+                        f"Key '{self.caption_column}' not found in JSONL entry: {entry}"
+                    )
                 if self.media_column not in entry:
-                    raise ValueError(f"Key '{self.media_column}' not found in JSONL entry: {entry}")
+                    raise ValueError(
+                        f"Key '{self.media_column}' not found in JSONL entry: {entry}"
+                    )
 
                 media_path = Path(entry[self.media_column].strip())
                 # Convert media path to embedding output path (same structure, .pt extension)
@@ -269,7 +279,9 @@ def compute_captions_embeddings(
 
     # Load text encoder
     with console.status("[bold]Loading Gemma text encoder...", spinner="dots"):
-        text_encoder = load_text_encoder(model_path, text_encoder_path, device=device, dtype=torch.bfloat16)
+        text_encoder = load_text_encoder(
+            model_path, text_encoder_path, device=device, dtype=torch.bfloat16
+        )
 
     logger.info("Text encoder loaded successfully")
 
@@ -282,7 +294,9 @@ def compute_captions_embeddings(
         batch_size = 1
 
     # Create dataloader
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=2)
+    dataloader = DataLoader(
+        dataset, batch_size=batch_size, shuffle=False, num_workers=2
+    )
 
     # Process batches
     total_batches = len(dataloader)
@@ -307,8 +321,10 @@ def compute_captions_embeddings(
                 #   prompt_embeds, prompt_attention_mask = text_encoder._preprocess_text(batch["prompt"]) # noqa: ERA001
                 # For now, process one at a time:
                 for i in range(len(batch["prompt"])):
-                    prompt_embeds, prompt_attention_mask = text_encoder._preprocess_text(
-                        batch["prompt"][i], padding_side="left"
+                    prompt_embeds, prompt_attention_mask = (
+                        text_encoder._preprocess_text(
+                            batch["prompt"][i], padding_side="left"
+                        )
                     )
 
                     output_rel_path = Path(batch["output_path"][i])
@@ -319,7 +335,9 @@ def compute_captions_embeddings(
 
                     embedding_data = {
                         "prompt_embeds": prompt_embeds[0].cpu().contiguous(),
-                        "prompt_attention_mask": prompt_attention_mask[0].cpu().contiguous(),
+                        "prompt_attention_mask": prompt_attention_mask[0]
+                        .cpu()
+                        .contiguous(),
                     }
 
                     output_file = output_path / output_rel_path
@@ -327,7 +345,9 @@ def compute_captions_embeddings(
 
             progress.advance(task)
 
-    logger.info(f"Processed {len(dataset):,} captions. Embeddings saved to {output_path}")
+    logger.info(
+        f"Processed {len(dataset):,} captions. Embeddings saved to {output_path}"
+    )
 
 
 @app.command()
@@ -404,7 +424,9 @@ def main(
         raise typer.BadParameter(f"Dataset file not found: {dataset_file}")
 
     if lora_trigger:
-        logger.info(f'LoRA trigger word "{lora_trigger}" will be prepended to all captions')
+        logger.info(
+            f'LoRA trigger word "{lora_trigger}" will be prepended to all captions'
+        )
 
     # Process embeddings
     compute_captions_embeddings(

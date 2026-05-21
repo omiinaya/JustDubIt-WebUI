@@ -68,7 +68,9 @@ def apply_split_rotary_emb(
 
 @functools.lru_cache(maxsize=5)
 def generate_freq_grid_np(
-    positional_embedding_theta: float, positional_embedding_max_pos_count: int, inner_dim: int
+    positional_embedding_theta: float,
+    positional_embedding_max_pos_count: int,
+    inner_dim: int,
 ) -> torch.Tensor:
     theta = positional_embedding_theta
     start = 1
@@ -89,7 +91,9 @@ def generate_freq_grid_np(
 
 @functools.lru_cache(maxsize=5)
 def generate_freq_grid_pytorch(
-    positional_embedding_theta: float, positional_embedding_max_pos_count: int, inner_dim: int
+    positional_embedding_theta: float,
+    positional_embedding_max_pos_count: int,
+    inner_dim: int,
 ) -> torch.Tensor:
     theta = positional_embedding_theta
     start = 1
@@ -111,11 +115,13 @@ def generate_freq_grid_pytorch(
     return indices
 
 
-def get_fractional_positions(indices_grid: torch.Tensor, max_pos: list[int]) -> torch.Tensor:
+def get_fractional_positions(
+    indices_grid: torch.Tensor, max_pos: list[int]
+) -> torch.Tensor:
     n_pos_dims = indices_grid.shape[1]
-    assert n_pos_dims == len(max_pos), (
-        f"Number of position dimensions ({n_pos_dims}) must match max_pos length ({len(max_pos)})"
-    )
+    assert n_pos_dims == len(
+        max_pos
+    ), f"Number of position dimensions ({n_pos_dims}) must match max_pos length ({len(max_pos)})"
     fractional_positions = torch.stack(
         [indices_grid[:, i] / max_pos[i] for i in range(n_pos_dims)],
         dim=-1,
@@ -124,12 +130,18 @@ def get_fractional_positions(indices_grid: torch.Tensor, max_pos: list[int]) -> 
 
 
 def generate_freqs(
-    indices: torch.Tensor, indices_grid: torch.Tensor, max_pos: list[int], use_middle_indices_grid: bool
+    indices: torch.Tensor,
+    indices_grid: torch.Tensor,
+    max_pos: list[int],
+    use_middle_indices_grid: bool,
 ) -> torch.Tensor:
     if use_middle_indices_grid:
         assert len(indices_grid.shape) == 4
         assert indices_grid.shape[-1] == 2
-        indices_grid_start, indices_grid_end = indices_grid[..., 0], indices_grid[..., 1]
+        indices_grid_start, indices_grid_end = (
+            indices_grid[..., 0],
+            indices_grid[..., 1],
+        )
         indices_grid = (indices_grid_start + indices_grid_end) / 2.0
     elif len(indices_grid.shape) == 4:
         indices_grid = indices_grid[..., 0]
@@ -137,11 +149,17 @@ def generate_freqs(
     fractional_positions = get_fractional_positions(indices_grid, max_pos)
     indices = indices.to(device=fractional_positions.device)
 
-    freqs = (indices * (fractional_positions.unsqueeze(-1) * 2 - 1)).transpose(-1, -2).flatten(2)
+    freqs = (
+        (indices * (fractional_positions.unsqueeze(-1) * 2 - 1))
+        .transpose(-1, -2)
+        .flatten(2)
+    )
     return freqs
 
 
-def split_freqs_cis(freqs: torch.Tensor, pad_size: int, num_attention_heads: int) -> tuple[torch.Tensor, torch.Tensor]:
+def split_freqs_cis(
+    freqs: torch.Tensor, pad_size: int, num_attention_heads: int
+) -> tuple[torch.Tensor, torch.Tensor]:
     cos_freq = freqs.cos()
     sin_freq = freqs.sin()
 
@@ -164,7 +182,9 @@ def split_freqs_cis(freqs: torch.Tensor, pad_size: int, num_attention_heads: int
     return cos_freq, sin_freq
 
 
-def interleaved_freqs_cis(freqs: torch.Tensor, pad_size: int) -> tuple[torch.Tensor, torch.Tensor]:
+def interleaved_freqs_cis(
+    freqs: torch.Tensor, pad_size: int
+) -> tuple[torch.Tensor, torch.Tensor]:
     cos_freq = freqs.cos().repeat_interleave(2, dim=-1)
     sin_freq = freqs.sin().repeat_interleave(2, dim=-1)
     if pad_size != 0:
@@ -184,7 +204,9 @@ def precompute_freqs_cis(
     use_middle_indices_grid: bool = False,
     num_attention_heads: int = 32,
     rope_type: LTXRopeType = LTXRopeType.INTERLEAVED,
-    freq_grid_generator: Callable[[float, int, int, torch.device], torch.Tensor] = generate_freq_grid_pytorch,
+    freq_grid_generator: Callable[
+        [float, int, int, torch.device], torch.Tensor
+    ] = generate_freq_grid_pytorch,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     if max_pos is None:
         max_pos = [20, 2048, 2048]

@@ -32,7 +32,9 @@ def get_video_frame_count(video_path: str | Path) -> int:
     return frame_count
 
 
-def read_video(video_path: str | Path, max_frames: int | None = None) -> tuple[Tensor, float]:
+def read_video(
+    video_path: str | Path, max_frames: int | None = None
+) -> tuple[Tensor, float]:
     """Load frames from a video file using PyAV.
 
     Args:
@@ -57,7 +59,9 @@ def read_video(video_path: str | Path, max_frames: int | None = None) -> tuple[T
     return video.permute(0, 3, 1, 2), fps  # [F, C, H, W]
 
 
-def read_audio(video_path: Path, target_duration: float) -> dict[str, torch.Tensor | int]:
+def read_audio(
+    video_path: Path, target_duration: float
+) -> dict[str, torch.Tensor | int]:
     """Extract audio track from a video file, trimmed to match video duration."""
     # torchaudio can extract audio from video files directly
     # waveform shape: [channels, samples]
@@ -112,7 +116,9 @@ def save_video(
         # Setup audio stream if needed
         if audio is not None:
             if audio_sample_rate is None:
-                raise ValueError("audio_sample_rate must be provided when audio is given")
+                raise ValueError(
+                    "audio_sample_rate must be provided when audio is given"
+                )
             audio_stream = container.add_stream("aac", rate=audio_sample_rate)
             audio_stream.layout = "stereo"
             audio_stream.time_base = Fraction(1, audio_sample_rate)

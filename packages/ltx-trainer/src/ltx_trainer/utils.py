@@ -46,14 +46,19 @@ def open_image_as_srgb(image_path: str | Path | io.BytesIO) -> PilImage:
     srgb_profile = ImageCms.createProfile(colorSpace="sRGB")
     if input_icc_profile is not None:
         input_profile = ImageCms.ImageCmsProfile(io.BytesIO(input_icc_profile))
-        srgb_img = ImageCms.profileToProfile(img, input_profile, srgb_profile, outputMode="RGB")
+        srgb_img = ImageCms.profileToProfile(
+            img, input_profile, srgb_profile, outputMode="RGB"
+        )
     else:
         # Try fall back to checking EXIF
         exif_data = img.getexif()
         if exif_data is not None:
             # Assume sRGB if no ICC profile and EXIF has no ColorSpace tag
             color_space_value = exif_data.get(ExifTags.Base.ColorSpace.value)
-            if color_space_value is not None and color_space_value != exif_colorspace_srgb:
+            if (
+                color_space_value is not None
+                and color_space_value != exif_colorspace_srgb
+            ):
                 raise ValueError(
                     "Image has colorspace tag in EXIF but it isn't set to sRGB,"
                     " conversion is not supported."

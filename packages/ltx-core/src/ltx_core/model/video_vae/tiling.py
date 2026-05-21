@@ -59,11 +59,17 @@ class SpatialTilingConfig:
 
     def __post_init__(self) -> None:
         if self.tile_size_in_pixels < 64:
-            raise ValueError(f"tile_size_in_pixels must be at least 64, got {self.tile_size_in_pixels}")
+            raise ValueError(
+                f"tile_size_in_pixels must be at least 64, got {self.tile_size_in_pixels}"
+            )
         if self.tile_size_in_pixels % 32 != 0:
-            raise ValueError(f"tile_size_in_pixels must be divisible by 32, got {self.tile_size_in_pixels}")
+            raise ValueError(
+                f"tile_size_in_pixels must be divisible by 32, got {self.tile_size_in_pixels}"
+            )
         if self.tile_overlap_in_pixels % 32 != 0:
-            raise ValueError(f"tile_overlap_in_pixels must be divisible by 32, got {self.tile_overlap_in_pixels}")
+            raise ValueError(
+                f"tile_overlap_in_pixels must be divisible by 32, got {self.tile_overlap_in_pixels}"
+            )
 
 
 @dataclass(frozen=True)
@@ -81,11 +87,17 @@ class TemporalTilingConfig:
 
     def __post_init__(self) -> None:
         if self.tile_size_in_frames < 16:
-            raise ValueError(f"tile_size_in_frames must be at least 16, got {self.tile_size_in_frames}")
+            raise ValueError(
+                f"tile_size_in_frames must be at least 16, got {self.tile_size_in_frames}"
+            )
         if self.tile_size_in_frames % 8 != 0:
-            raise ValueError(f"tile_size_in_frames must be divisible by 8, got {self.tile_size_in_frames}")
+            raise ValueError(
+                f"tile_size_in_frames must be divisible by 8, got {self.tile_size_in_frames}"
+            )
         if self.tile_overlap_in_frames % 8 != 0:
-            raise ValueError(f"tile_overlap_in_frames must be divisible by 8, got {self.tile_overlap_in_frames}")
+            raise ValueError(
+                f"tile_overlap_in_frames must be divisible by 8, got {self.tile_overlap_in_frames}"
+            )
 
 
 @dataclass(frozen=True)
@@ -103,8 +115,12 @@ class TilingConfig:
     @classmethod
     def default(cls) -> "TilingConfig":
         return cls(
-            spatial_config=SpatialTilingConfig(tile_size_in_pixels=512, tile_overlap_in_pixels=64),
-            temporal_config=TemporalTilingConfig(tile_size_in_frames=64, tile_overlap_in_frames=24),
+            spatial_config=SpatialTilingConfig(
+                tile_size_in_pixels=512, tile_overlap_in_pixels=64
+            ),
+            temporal_config=TemporalTilingConfig(
+                tile_size_in_frames=64, tile_overlap_in_frames=24
+            ),
         )
 
 
@@ -188,7 +204,9 @@ def create_tiles_from_tile_sizes(
         spatial_axes_indices=spatial_axes_indices,
         temporal_axes_indices=temporal_axes_indices,
     )
-    return create_tiles_from_latent_intervals(vae, latent_intervals, temporal_axes_indices, spatial_axes_indices)
+    return create_tiles_from_latent_intervals(
+        vae, latent_intervals, temporal_axes_indices, spatial_axes_indices
+    )
 
 
 def create_tiles_from_tiles_amount(
@@ -210,7 +228,9 @@ def create_tiles_from_tiles_amount(
         temporal_axes_indices,
         spatial_axes_indices,
     )
-    return create_tiles_from_latent_intervals(vae, latent_intervals, temporal_axes_indices, spatial_axes_indices)
+    return create_tiles_from_latent_intervals(
+        vae, latent_intervals, temporal_axes_indices, spatial_axes_indices
+    )
 
 
 def _create_intervals_from_tile_sizes(
@@ -232,8 +252,16 @@ def _create_intervals_from_tile_sizes(
         overlap = 0
         amount = 1
         if axis_index in temporal_axes_indices or axis_index in spatial_axes_indices:
-            size = temporal_tile_size if axis_index in temporal_axes_indices else spatial_tile_size
-            overlap = temporal_overlap if axis_index in temporal_axes_indices else spatial_overlap
+            size = (
+                temporal_tile_size
+                if axis_index in temporal_axes_indices
+                else spatial_tile_size
+            )
+            overlap = (
+                temporal_overlap
+                if axis_index in temporal_axes_indices
+                else spatial_overlap
+            )
             amount = (dimension_size + size - 2 * overlap - 1) // (size - overlap)
         starts = [i * (size - overlap) for i in range(amount)]
         ends = [start + size for start in starts]
@@ -283,7 +311,9 @@ def _create_intervals_from_tiles_amount(
         elif axis_index in spatial_axes_indices:
             amount = spatial_tiles_amount
             overlap = spatial_overlap
-            size = (dimension_size + (spatial_tiles_amount - 1) * overlap) // spatial_tiles_amount
+            size = (
+                dimension_size + (spatial_tiles_amount - 1) * overlap
+            ) // spatial_tiles_amount
         starts = [i * (size - overlap) for i in range(amount)]
         ends = [start + size for start in starts]
         ends[-1] = dimension_size
@@ -346,7 +376,9 @@ def create_tiles_from_latent_intervals(
     tile_in_coords = list(itertools.product(*full_dim_input_slices))
     tile_out_coords = list(itertools.product(*full_dim_output_slices))
     tile_mask_1ds = list(itertools.product(*full_dim_masks_1d))
-    for in_coord, out_coord, mask_1d in zip(tile_in_coords, tile_out_coords, tile_mask_1ds, strict=True):
+    for in_coord, out_coord, mask_1d in zip(
+        tile_in_coords, tile_out_coords, tile_mask_1ds, strict=True
+    ):
         tiles.append(
             Tile(
                 in_coords=in_coord,

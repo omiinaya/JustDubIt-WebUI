@@ -15,7 +15,12 @@ def index():  # noqa: ANN201
 
 @app.route("/api/jobs")
 def get_jobs():  # noqa: ANN201
-    return jsonify({"jobs": list(jobs.values()), "message": "Demo mode - Install ML dependencies to enable dubbing"})
+    return jsonify(
+        {
+            "jobs": list(jobs.values()),
+            "message": "Demo mode - Install ML dependencies to enable dubbing",
+        }
+    )
 
 
 @app.route("/api/dub", methods=["POST"])
@@ -28,7 +33,11 @@ def dub_video():  # noqa: ANN201
         "created_at": datetime.now().isoformat(),  # noqa: DTZ005
     }
     return jsonify(
-        {"job_id": job_id, "status": "demo", "message": "WebUI is in demo mode. Install models for full functionality."}
+        {
+            "job_id": job_id,
+            "status": "demo",
+            "message": "WebUI is in demo mode. Install models for full functionality.",
+        }
     )
 
 

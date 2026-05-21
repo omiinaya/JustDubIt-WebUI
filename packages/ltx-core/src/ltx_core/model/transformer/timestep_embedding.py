@@ -33,7 +33,9 @@ def get_timestep_embedding(
     assert len(timesteps.shape) == 1, "Timesteps should be a 1d-array"
 
     half_dim = embedding_dim // 2
-    exponent = -math.log(max_period) * torch.arange(start=0, end=half_dim, dtype=torch.float32, device=timesteps.device)
+    exponent = -math.log(max_period) * torch.arange(
+        start=0, end=half_dim, dtype=torch.float32, device=timesteps.device
+    )
     exponent = exponent / (half_dim - downscale_freq_shift)
 
     emb = torch.exp(exponent)
@@ -77,12 +79,16 @@ class TimestepEmbedding(torch.nn.Module):
         self.act = torch.nn.SiLU()
         time_embed_dim_out = out_dim if out_dim is not None else time_embed_dim
 
-        self.linear_2 = torch.nn.Linear(time_embed_dim, time_embed_dim_out, sample_proj_bias)
+        self.linear_2 = torch.nn.Linear(
+            time_embed_dim, time_embed_dim_out, sample_proj_bias
+        )
 
         if post_act_fn is None:
             self.post_act = None
 
-    def forward(self, sample: torch.Tensor, condition: torch.Tensor | None = None) -> torch.Tensor:
+    def forward(
+        self, sample: torch.Tensor, condition: torch.Tensor | None = None
+    ) -> torch.Tensor:
         if condition is not None:
             sample = sample + self.cond_proj(condition)
         sample = self.linear_1(sample)
@@ -98,7 +104,13 @@ class TimestepEmbedding(torch.nn.Module):
 
 
 class Timesteps(torch.nn.Module):
-    def __init__(self, num_channels: int, flip_sin_to_cos: bool, downscale_freq_shift: float, scale: int = 1):
+    def __init__(
+        self,
+        num_channels: int,
+        flip_sin_to_cos: bool,
+        downscale_freq_shift: float,
+        scale: int = 1,
+    ):
         super().__init__()
         self.num_channels = num_channels
         self.flip_sin_to_cos = flip_sin_to_cos
@@ -132,8 +144,12 @@ class PixArtAlphaCombinedTimestepSizeEmbeddings(torch.nn.Module):
         super().__init__()
 
         self.outdim = size_emb_dim
-        self.time_proj = Timesteps(num_channels=256, flip_sin_to_cos=True, downscale_freq_shift=0)
-        self.timestep_embedder = TimestepEmbedding(in_channels=256, time_embed_dim=embedding_dim)
+        self.time_proj = Timesteps(
+            num_channels=256, flip_sin_to_cos=True, downscale_freq_shift=0
+        )
+        self.timestep_embedder = TimestepEmbedding(
+            in_channels=256, time_embed_dim=embedding_dim
+        )
 
     def forward(
         self,
@@ -141,5 +157,7 @@ class PixArtAlphaCombinedTimestepSizeEmbeddings(torch.nn.Module):
         hidden_dtype: torch.dtype,
     ) -> torch.Tensor:
         timesteps_proj = self.time_proj(timestep)
-        timesteps_emb = self.timestep_embedder(timesteps_proj.to(dtype=hidden_dtype))  # (N, D)
+        timesteps_emb = self.timestep_embedder(
+            timesteps_proj.to(dtype=hidden_dtype)
+        )  # (N, D)
         return timesteps_emb

@@ -5,17 +5,25 @@ from typing import List, Union
 
 import imageio
 from huggingface_hub import HfApi, create_repo
-from huggingface_hub.utils import are_progress_bars_disabled, disable_progress_bars, enable_progress_bars
+from huggingface_hub.utils import (
+    are_progress_bars_disabled,
+    disable_progress_bars,
+    enable_progress_bars,
+)
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from ltx_trainer import logger
 from ltx_trainer.config import LtxTrainerConfig
 
 
-def push_to_hub(weights_path: Path, sampled_videos_paths: List[Path], config: LtxTrainerConfig) -> None:
+def push_to_hub(
+    weights_path: Path, sampled_videos_paths: List[Path], config: LtxTrainerConfig
+) -> None:
     """Push the trained LoRA weights to HuggingFace Hub."""
     if not config.hub.hub_model_id:
-        logger.warning("⚠️ HuggingFace hub_model_id not specified, skipping push to hub")
+        logger.warning(
+            "⚠️ HuggingFace hub_model_id not specified, skipping push to hub"
+        )
         return
 
     api = HfApi()
@@ -33,7 +41,9 @@ def push_to_hub(weights_path: Path, sampled_videos_paths: List[Path], config: Lt
                 exist_ok=True,  # Don't raise error if repo exists
             )
             repo_id = repo.repo_id
-            logger.info(f"🤗 Successfully created HuggingFace model repository at: {repo.url}")
+            logger.info(
+                f"🤗 Successfully created HuggingFace model repository at: {repo.url}"
+            )
         except Exception as e:
             logger.error(f"❌ Failed to create HuggingFace model repository: {e}")
             return
@@ -55,26 +65,36 @@ def push_to_hub(weights_path: Path, sampled_videos_paths: List[Path], config: Lt
                     progress.update(task_copy, description="✓ Weights copied")
 
                     # Create model card and save samples
-                    task_card = progress.add_task("Creating model card and samples...", total=None)
+                    task_card = progress.add_task(
+                        "Creating model card and samples...", total=None
+                    )
                     _create_model_card(
                         output_dir=temp_path,
                         videos=sampled_videos_paths,
                         config=config,
                     )
-                    progress.update(task_card, description="✓ Model card and samples created")
+                    progress.update(
+                        task_card, description="✓ Model card and samples created"
+                    )
 
                     # Upload everything at once
-                    task_upload = progress.add_task("Pushing files to HuggingFace Hub...", total=None)
+                    task_upload = progress.add_task(
+                        "Pushing files to HuggingFace Hub...", total=None
+                    )
                     api.upload_folder(
                         folder_path=str(temp_path),
                         repo_id=repo_id,
                         repo_type="model",
                     )
-                    progress.update(task_upload, description="✓ Files pushed to HuggingFace Hub")
+                    progress.update(
+                        task_upload, description="✓ Files pushed to HuggingFace Hub"
+                    )
                     logger.info("✅ Successfully pushed files to HuggingFace Hub")
 
                 except Exception as e:
-                    logger.error(f"❌ Failed to process and push files to HuggingFace Hub: {e}")
+                    logger.error(
+                        f"❌ Failed to process and push files to HuggingFace Hub: {e}"
+                    )
                     raise  # Re-raise to handle in outer try block
 
     finally:
@@ -131,7 +151,11 @@ def _create_model_card(
     is_url = model_path_str.startswith(("http://", "https://"))
 
     # For URLs, extract the filename from the URL. For local paths, use the filename stem
-    base_model_name = model_path_str.rsplit("/", maxsplit=1)[-1] if is_url else Path(pretrained_model_name_or_path).name
+    base_model_name = (
+        model_path_str.rsplit("/", maxsplit=1)[-1]
+        if is_url
+        else Path(pretrained_model_name_or_path).name
+    )
 
     # Format validation prompts and create grid layout
     prompts_text = ""
@@ -146,7 +170,9 @@ def _create_model_card(
 
         # Process videos and create cells
         cells = []
-        for i, (prompt, video) in enumerate(zip(validation_prompts, videos, strict=False)):
+        for i, (prompt, video) in enumerate(
+            zip(validation_prompts, videos, strict=False)
+        ):
             if video.exists():
                 # Add prompt to text section
                 prompts_text += f"- `{prompt}`\n"
@@ -193,7 +219,11 @@ def _create_model_card(
         base_model=base_model_name,
         base_model_link=base_model_link,
         model_name=model_name,
-        training_type="LoRA fine-tuning" if config.model.training_mode == "lora" else "Full model fine-tuning",
+        training_type=(
+            "LoRA fine-tuning"
+            if config.model.training_mode == "lora"
+            else "Full model fine-tuning"
+        ),
         training_steps=config.optimization.steps,
         learning_rate=config.optimization.learning_rate,
         batch_size=config.optimization.batch_size,

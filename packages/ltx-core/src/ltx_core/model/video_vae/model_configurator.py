@@ -1,6 +1,10 @@
 from ltx_core.loader.sd_ops import SDOps
 from ltx_core.model.model_protocol import ModelConfigurator
-from ltx_core.model.video_vae.enums import LogVarianceType, NormLayerType, PaddingModeType
+from ltx_core.model.video_vae.enums import (
+    LogVarianceType,
+    NormLayerType,
+    PaddingModeType,
+)
 from ltx_core.model.video_vae.video_vae import Decoder, Encoder
 
 
@@ -13,7 +17,9 @@ class VAEEncoderConfigurator(ModelConfigurator[Encoder]):
         convolution_dimensions = config.get("dims", 3)
         in_channels = config.get("in_channels", 3)
         latent_channels = config.get("latent_channels", 128)
-        encoder_spatial_padding_mode = PaddingModeType(config.get("encoder_spatial_padding_mode", "zeros"))
+        encoder_spatial_padding_mode = PaddingModeType(
+            config.get("encoder_spatial_padding_mode", "zeros")
+        )
         encoder_blocks = config.get("encoder_blocks", [])
         patch_size = config.get("patch_size", 4)
         norm_layer_str = config.get("norm_layer", "pixel_norm")
@@ -39,7 +45,9 @@ class VAEDecoderConfigurator(ModelConfigurator[Decoder]):
         config = config.get("vae", {})
         convolution_dimensions = config.get("dims", 3)
         latent_channels = config.get("latent_channels", 128)
-        decoder_spatial_padding_mode = PaddingModeType(config.get("decoder_spatial_padding_mode", "reflect"))
+        decoder_spatial_padding_mode = PaddingModeType(
+            config.get("decoder_spatial_padding_mode", "reflect")
+        )
         out_channels = config.get("out_channels", 3)
         decoder_blocks = config.get("decoder_blocks", [])
         patch_size = config.get("patch_size", 4)

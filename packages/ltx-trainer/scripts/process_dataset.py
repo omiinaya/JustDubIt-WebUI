@@ -19,7 +19,12 @@ from pathlib import Path
 import typer
 from decode_latents import LatentsDecoder
 from process_captions import compute_captions_embeddings
-from process_videos import compute_latents, compute_mask_latents, decode_masks_folder, parse_resolution_buckets
+from process_videos import (
+    compute_latents,
+    compute_mask_latents,
+    decode_masks_folder,
+    parse_resolution_buckets,
+)
 from rich.console import Console
 
 from ltx_trainer import logger
@@ -56,12 +61,16 @@ def preprocess_dataset(  # noqa: PLR0912, PLR0913, PLR0915
     _validate_dataset_file(dataset_file)
 
     # Set up output directories
-    output_base = Path(output_dir) if output_dir else Path(dataset_file).parent / ".precomputed"
+    output_base = (
+        Path(output_dir) if output_dir else Path(dataset_file).parent / ".precomputed"
+    )
     conditions_dir = output_base / "conditions"
     latents_dir = output_base / "latents"
 
     if lora_trigger:
-        logger.info(f'LoRA trigger word "{lora_trigger}" will be prepended to all captions')
+        logger.info(
+            f'LoRA trigger word "{lora_trigger}" will be prepended to all captions'
+        )
 
     # Process captions using the dedicated function
     compute_captions_embeddings(
@@ -80,7 +89,9 @@ def preprocess_dataset(  # noqa: PLR0912, PLR0913, PLR0915
     # Process videos using the dedicated function
     audio_latents_dir = None
     if with_audio:
-        logger.info("Audio preprocessing enabled - will extract and encode audio from videos")
+        logger.info(
+            "Audio preprocessing enabled - will extract and encode audio from videos"
+        )
         audio_latents_dir = output_base / "audio_latents"
 
     compute_latents(
@@ -117,7 +128,11 @@ def preprocess_dataset(  # noqa: PLR0912, PLR0913, PLR0915
             device=device,
             vae_tiling=vae_tiling,
             with_audio=with_audio,
-            audio_output_dir=str(reference_audio_latents_dir) if reference_audio_latents_dir else None,
+            audio_output_dir=(
+                str(reference_audio_latents_dir)
+                if reference_audio_latents_dir
+                else None
+            ),
         )
 
     if mask_column:
@@ -153,7 +168,9 @@ def preprocess_dataset(  # noqa: PLR0912, PLR0913, PLR0915
             reference_latents_dir = output_base / "reference_latents"
             if reference_latents_dir.exists():
                 logger.info("Decoding reference videos...")
-                decoder.decode(reference_latents_dir, output_base / "decoded_reference_videos")
+                decoder.decode(
+                    reference_latents_dir, output_base / "decoded_reference_videos"
+                )
 
         # Decode audio latents if they exist
         audio_latents_dir = output_base / "audio_latents"
@@ -162,9 +179,15 @@ def preprocess_dataset(  # noqa: PLR0912, PLR0913, PLR0915
             decoder.decode_audio(audio_latents_dir, output_base / "decoded_audio")
 
         reference_audio_latents_dir = output_base / "reference_audio_latents"
-        if with_audio and reference_audio_latents_dir and reference_audio_latents_dir.exists():
+        if (
+            with_audio
+            and reference_audio_latents_dir
+            and reference_audio_latents_dir.exists()
+        ):
             logger.info("Decoding reference audio latents...")
-            decoder.decode_audio(reference_audio_latents_dir, output_base / "decoded_reference_audio")
+            decoder.decode_audio(
+                reference_audio_latents_dir, output_base / "decoded_reference_audio"
+            )
 
         if mask_column:
             masks_dir = output_base / "masks"
@@ -175,9 +198,13 @@ def preprocess_dataset(  # noqa: PLR0912, PLR0913, PLR0915
     # Print summary
     logger.info(f"Dataset preprocessing complete! Results saved to {output_base}")
     if reference_column:
-        logger.info("Reference videos processed and saved to reference_latents/ directory for IC-LoRA training")
+        logger.info(
+            "Reference videos processed and saved to reference_latents/ directory for IC-LoRA training"
+        )
     if with_audio:
-        logger.info("Audio latents saved to audio_latents/ directory for audio-video training")
+        logger.info(
+            "Audio latents saved to audio_latents/ directory for audio-video training"
+        )
 
 
 def _validate_dataset_file(dataset_path: str) -> None:
@@ -188,10 +215,14 @@ def _validate_dataset_file(dataset_path: str) -> None:
         raise FileNotFoundError(f"Dataset file does not exist: {dataset_file}")
 
     if not dataset_file.is_file():
-        raise ValueError(f"Dataset path must be a file, not a directory: {dataset_file}")
+        raise ValueError(
+            f"Dataset path must be a file, not a directory: {dataset_file}"
+        )
 
     if dataset_file.suffix.lower() not in [".csv", ".json", ".jsonl"]:
-        raise ValueError(f"Dataset file must be CSV, JSON, or JSONL format: {dataset_file}")
+        raise ValueError(
+            f"Dataset file must be CSV, JSON, or JSONL format: {dataset_file}"
+        )
 
 
 @app.command()

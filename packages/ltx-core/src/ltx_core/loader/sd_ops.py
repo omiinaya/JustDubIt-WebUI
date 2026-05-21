@@ -46,7 +46,9 @@ class KeyValueOperation(Protocol):
     Used to apply operations to a specific key and value in a state dict.
     """
 
-    def __call__(self, tensor_key: str, tensor_value: torch.Tensor) -> list[KeyValueOperationResult]: ...
+    def __call__(
+        self, tensor_key: str, tensor_value: torch.Tensor
+    ) -> list[KeyValueOperationResult]: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,8 +98,12 @@ class SDOps:
 
     def apply_to_key(self, key: str) -> str | None:
         """Apply the mapping to the given name."""
-        matchers = [content for content in self.mapping if isinstance(content, ContentMatching)]
-        valid = any(key.startswith(f.prefix) and key.endswith(f.suffix) for f in matchers)
+        matchers = [
+            content for content in self.mapping if isinstance(content, ContentMatching)
+        ]
+        valid = any(
+            key.startswith(f.prefix) and key.endswith(f.suffix) for f in matchers
+        )
         if not valid:
             return None
 
@@ -108,19 +114,25 @@ class SDOps:
                 key = key.replace(replacement.content, replacement.replacement)
         return key
 
-    def apply_to_key_value(self, key: str, value: torch.Tensor) -> list[KeyValueOperationResult]:
+    def apply_to_key_value(
+        self, key: str, value: torch.Tensor
+    ) -> list[KeyValueOperationResult]:
         """Apply the value operation to the given name and associated value."""
         for operation in self.mapping:
             if not isinstance(operation, SDKeyValueOperation):
                 continue
-            if key.startswith(operation.key_matcher.prefix) and key.endswith(operation.key_matcher.suffix):
+            if key.startswith(operation.key_matcher.prefix) and key.endswith(
+                operation.key_matcher.suffix
+            ):
                 return operation.kv_operation(key, value)
         return [KeyValueOperationResult(key, value)]
 
 
 # Predefined SDOps instances
 LTXV_LORA_COMFY_RENAMING_MAP = (
-    SDOps("LTXV_LORA_COMFY_PREFIX_MAP").with_matching().with_replacement("diffusion_model.", "")
+    SDOps("LTXV_LORA_COMFY_PREFIX_MAP")
+    .with_matching()
+    .with_replacement("diffusion_model.", "")
 )
 
 LTXV_LORA_COMFY_TARGET_MAP = (

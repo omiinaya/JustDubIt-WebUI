@@ -16,7 +16,12 @@ from ltx_core.model.video_vae import Decoder as VideoDecoder
 from ltx_core.model.video_vae import TilingConfig
 from ltx_core.text_encoders.gemma import GemmaTextEncoderModelBase
 from ltx_core.tools import AudioLatentTools, LatentTools, VideoLatentTools
-from ltx_core.types import AudioLatentShape, LatentState, VideoLatentShape, VideoPixelShape
+from ltx_core.types import (
+    AudioLatentShape,
+    LatentState,
+    VideoLatentShape,
+    VideoPixelShape,
+)
 from ltx_core.utils import to_denoised, to_velocity
 from ltx_pipelines.constants import VIDEO_LATENT_CHANNELS, VIDEO_SCALE_FACTORS
 
@@ -39,7 +44,11 @@ class PipelineComponents:
 
 class DenoisingFunc(Protocol):
     def __call__(
-        self, video_state: LatentState, audio_state: LatentState, sigmas: torch.Tensor, step_index: int
+        self,
+        video_state: LatentState,
+        audio_state: LatentState,
+        sigmas: torch.Tensor,
+        step_index: int,
     ) -> tuple[torch.Tensor, torch.Tensor]: ...
 
 
@@ -86,13 +95,25 @@ def euler_denoising_loop(
         audio latent states after completing the denoising loop.
     """
     for step_idx, _ in enumerate(tqdm(sigmas[:-1])):
-        denoised_video, denoised_audio = denoise_fn(video_state, audio_state, sigmas, step_idx)
+        denoised_video, denoised_audio = denoise_fn(
+            video_state, audio_state, sigmas, step_idx
+        )
 
-        denoised_video = post_process_latent(denoised_video, video_state.denoise_mask, video_state.clean_latent)
-        denoised_audio = post_process_latent(denoised_audio, audio_state.denoise_mask, audio_state.clean_latent)
+        denoised_video = post_process_latent(
+            denoised_video, video_state.denoise_mask, video_state.clean_latent
+        )
+        denoised_audio = post_process_latent(
+            denoised_audio, audio_state.denoise_mask, audio_state.clean_latent
+        )
 
-        video_state = replace(video_state, latent=stepper.step(video_state.latent, denoised_video, sigmas, step_idx))
-        audio_state = replace(audio_state, latent=stepper.step(audio_state.latent, denoised_audio, sigmas, step_idx))
+        video_state = replace(
+            video_state,
+            latent=stepper.step(video_state.latent, denoised_video, sigmas, step_idx),
+        )
+        audio_state = replace(
+            audio_state,
+            latent=stepper.step(audio_state.latent, denoised_audio, sigmas, step_idx),
+        )
 
     return (video_state, audio_state)
 
@@ -132,7 +153,10 @@ def gradient_estimating_euler_denoising_loop(
     previous_video_velocity = None
 
     def update_velocity_and_sample(
-        noisy_sample: torch.Tensor, denoised_sample: torch.Tensor, sigma: float, previous_velocity: torch.Tensor | None
+        noisy_sample: torch.Tensor,
+        denoised_sample: torch.Tensor,
+        sigma: float,
+        previous_velocity: torch.Tensor | None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         current_velocity = to_velocity(noisy_sample, sigma, denoised_sample)
         if previous_velocity is not None:
@@ -142,23 +166,43 @@ def gradient_estimating_euler_denoising_loop(
         return current_velocity, denoised_sample
 
     for step_idx, _ in enumerate(tqdm(sigmas[:-1])):
-        denoised_video, denoised_audio = denoise_fn(video_state, audio_state, sigmas, step_idx)
+        denoised_video, denoised_audio = denoise_fn(
+            video_state, audio_state, sigmas, step_idx
+        )
 
-        denoised_video = post_process_latent(denoised_video, video_state.denoise_mask, video_state.clean_latent)
-        denoised_audio = post_process_latent(denoised_audio, audio_state.denoise_mask, audio_state.clean_latent)
+        denoised_video = post_process_latent(
+            denoised_video, video_state.denoise_mask, video_state.clean_latent
+        )
+        denoised_audio = post_process_latent(
+            denoised_audio, audio_state.denoise_mask, audio_state.clean_latent
+        )
 
         if sigmas[step_idx + 1] == 0:
-            return replace(video_state, latent=denoised_video), replace(audio_state, latent=denoised_audio)
+            return replace(video_state, latent=denoised_video), replace(
+                audio_state, latent=denoised_audio
+            )
 
         previous_video_velocity, denoised_video = update_velocity_and_sample(
-            video_state.latent, denoised_video, sigmas[step_idx], previous_video_velocity
+            video_state.latent,
+            denoised_video,
+            sigmas[step_idx],
+            previous_video_velocity,
         )
         previous_audio_velocity, denoised_audio = update_velocity_and_sample(
-            audio_state.latent, denoised_audio, sigmas[step_idx], previous_audio_velocity
+            audio_state.latent,
+            denoised_audio,
+            sigmas[step_idx],
+            previous_audio_velocity,
         )
 
-        video_state = replace(video_state, latent=stepper.step(video_state.latent, denoised_video, sigmas, step_idx))
-        audio_state = replace(audio_state, latent=stepper.step(audio_state.latent, denoised_audio, sigmas, step_idx))
+        video_state = replace(
+            video_state,
+            latent=stepper.step(video_state.latent, denoised_video, sigmas, step_idx),
+        )
+        audio_state = replace(
+            audio_state,
+            latent=stepper.step(audio_state.latent, denoised_audio, sigmas, step_idx),
+        )
 
     return (video_state, audio_state)
 
@@ -185,7 +229,9 @@ def noise_video_state(
         latent_channels=components.video_latent_channels,
         scale_factors=components.video_scale_factors,
     )
-    video_tools = VideoLatentTools(components.video_patchifier, video_latent_shape, output_shape.fps)
+    video_tools = VideoLatentTools(
+        components.video_patchifier, video_latent_shape, output_shape.fps
+    )
     video_state = create_noised_state(
         tools=video_tools,
         conditionings=conditionings,
@@ -255,7 +301,9 @@ def create_noised_state(
 
 
 def state_with_conditionings(
-    latent_state: LatentState, conditioning_items: list[ConditioningItem], latent_tools: LatentTools
+    latent_state: LatentState,
+    conditioning_items: list[ConditioningItem],
+    latent_tools: LatentTools,
 ) -> LatentState:
     """Apply a list of conditionings to a latent state.
 
@@ -263,14 +311,20 @@ def state_with_conditionings(
     state in sequence. Returns the modified state with all conditionings applied.
     """
     for conditioning in conditioning_items:
-        latent_state = conditioning.apply_to(latent_state=latent_state, latent_tools=latent_tools)
+        latent_state = conditioning.apply_to(
+            latent_state=latent_state, latent_tools=latent_tools
+        )
 
     return latent_state
 
 
-def post_process_latent(denoised: torch.Tensor, denoise_mask: torch.Tensor, clean: torch.Tensor) -> torch.Tensor:
+def post_process_latent(
+    denoised: torch.Tensor, denoise_mask: torch.Tensor, clean: torch.Tensor
+) -> torch.Tensor:
     """Blend denoised output with clean state based on mask."""
-    return (denoised * denoise_mask + clean.float() * (1 - denoise_mask)).to(denoised.dtype)
+    return (denoised * denoise_mask + clean.float() * (1 - denoise_mask)).to(
+        denoised.dtype
+    )
 
 
 def modality_from_latent_state(
@@ -296,7 +350,9 @@ def modality_from_latent_state(
     )
 
 
-def timesteps_from_mask(denoise_mask: torch.Tensor, sigma: float | torch.Tensor) -> torch.Tensor:
+def timesteps_from_mask(
+    denoise_mask: torch.Tensor, sigma: float | torch.Tensor
+) -> torch.Tensor:
     """Compute timesteps from a denoise mask and sigma value.
 
     Multiplies the denoise mask by sigma to produce timesteps for each position
@@ -325,14 +381,18 @@ def decode_video(
 
 
 @torch.inference_mode()
-def decode_audio(audio_state: LatentState, audio_decoder: AudioDecoder, vocoder: Vocoder) -> torch.Tensor:
+def decode_audio(
+    audio_state: LatentState, audio_decoder: AudioDecoder, vocoder: Vocoder
+) -> torch.Tensor:
     decoded_audio = audio_decoder(audio_state.latent[:1])
     decoded_audio = vocoder(decoded_audio).squeeze(0).float()
     return decoded_audio
 
 
 @torch.inference_mode()
-def encode_text(text_encoder: GemmaTextEncoderModelBase, prompts: list[str]) -> list[tuple[torch.Tensor, torch.Tensor]]:
+def encode_text(
+    text_encoder: GemmaTextEncoderModelBase, prompts: list[str]
+) -> list[tuple[torch.Tensor, torch.Tensor]]:
     result = []
     for prompt in prompts:
         v_context, a_context, _ = text_encoder(prompt)
@@ -348,17 +408,28 @@ def simple_denoising_func(
     a2v_cross_attention_mask: torch.Tensor | None = None,
 ) -> DenoisingFunc:
     def simple_denoising_step(
-        video_state: LatentState, audio_state: LatentState, sigmas: torch.Tensor, step_index: int
+        video_state: LatentState,
+        audio_state: LatentState,
+        sigmas: torch.Tensor,
+        step_index: int,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         sigma = sigmas[step_index]
         pos_video = modality_from_latent_state(
-            video_state, video_context, sigma, cross_attention_mask=a2v_cross_attention_mask
+            video_state,
+            video_context,
+            sigma,
+            cross_attention_mask=a2v_cross_attention_mask,
         )
         pos_audio = modality_from_latent_state(
-            audio_state, audio_context, sigma, cross_attention_mask=v2a_cross_attention_mask
+            audio_state,
+            audio_context,
+            sigma,
+            cross_attention_mask=v2a_cross_attention_mask,
         )
 
-        denoised_video, denoised_audio = transformer(video=pos_video, audio=pos_audio, perturbations=None)
+        denoised_video, denoised_audio = transformer(
+            video=pos_video, audio=pos_audio, perturbations=None
+        )
         return denoised_video, denoised_audio
 
     return simple_denoising_step
@@ -375,29 +446,52 @@ def guider_denoising_func(
     a2v_cross_attention_mask: torch.Tensor | None = None,
 ) -> DenoisingFunc:
     def guider_denoising_step(
-        video_state: LatentState, audio_state: LatentState, sigmas: torch.Tensor, step_index: int
+        video_state: LatentState,
+        audio_state: LatentState,
+        sigmas: torch.Tensor,
+        step_index: int,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         sigma = sigmas[step_index]
         pos_video = modality_from_latent_state(
-            video_state, v_context_p, sigma, cross_attention_mask=a2v_cross_attention_mask
+            video_state,
+            v_context_p,
+            sigma,
+            cross_attention_mask=a2v_cross_attention_mask,
         )
         pos_audio = modality_from_latent_state(
-            audio_state, a_context_p, sigma, cross_attention_mask=v2a_cross_attention_mask
+            audio_state,
+            a_context_p,
+            sigma,
+            cross_attention_mask=v2a_cross_attention_mask,
         )
 
-        denoised_video, denoised_audio = transformer(video=pos_video, audio=pos_audio, perturbations=None)
+        denoised_video, denoised_audio = transformer(
+            video=pos_video, audio=pos_audio, perturbations=None
+        )
         if guider.enabled():
             neg_video = modality_from_latent_state(
-                video_state, v_context_n, sigma, cross_attention_mask=a2v_cross_attention_mask
+                video_state,
+                v_context_n,
+                sigma,
+                cross_attention_mask=a2v_cross_attention_mask,
             )
             neg_audio = modality_from_latent_state(
-                audio_state, a_context_n, sigma, cross_attention_mask=v2a_cross_attention_mask
+                audio_state,
+                a_context_n,
+                sigma,
+                cross_attention_mask=v2a_cross_attention_mask,
             )
 
-            neg_denoised_video, neg_denoised_audio = transformer(video=neg_video, audio=neg_audio, perturbations=None)
+            neg_denoised_video, neg_denoised_audio = transformer(
+                video=neg_video, audio=neg_audio, perturbations=None
+            )
 
-            denoised_video = denoised_video + guider.delta(denoised_video, neg_denoised_video)
-            denoised_audio = denoised_audio + guider.delta(denoised_audio, neg_denoised_audio)
+            denoised_video = denoised_video + guider.delta(
+                denoised_video, neg_denoised_video
+            )
+            denoised_audio = denoised_audio + guider.delta(
+                denoised_audio, neg_denoised_audio
+            )
 
         return denoised_video, denoised_audio
 
@@ -406,7 +500,11 @@ def guider_denoising_func(
 
 class DenoisingLoopFunc(Protocol):
     def __call__(
-        self, sigmas: torch.Tensor, video_state: LatentState, audio_state: LatentState, stepper: DiffusionStepProtocol
+        self,
+        sigmas: torch.Tensor,
+        video_state: LatentState,
+        audio_state: LatentState,
+        stepper: DiffusionStepProtocol,
     ) -> tuple[torch.Tensor, torch.Tensor]: ...
 
 

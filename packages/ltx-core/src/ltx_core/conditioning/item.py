@@ -7,7 +7,9 @@ from ltx_core.types import LatentState
 class ConditioningItem(Protocol):
     """Protocol for conditioning items that modify latent state during diffusion."""
 
-    def apply_to(self, latent_state: LatentState, latent_tools: LatentTools) -> LatentState:
+    def apply_to(
+        self, latent_state: LatentState, latent_tools: LatentTools
+    ) -> LatentState:
         """
         Apply the conditioning to the latent state.
 

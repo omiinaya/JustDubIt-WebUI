@@ -205,11 +205,15 @@ class ModelLedger:
                 module_ops=(UPCAST_DURING_INFERENCE,),
                 model_sd_ops=LTXV_MODEL_COMFY_RENAMING_WITH_TRANSFORMER_LINEAR_DOWNCAST_MAP,
             )
-            return X0Model(fp8_builder.build(device=self._target_device())).to(self.device)
-        else:
-            return X0Model(self.transformer_builder.build(device=self._target_device(), dtype=self.dtype)).to(
+            return X0Model(fp8_builder.build(device=self._target_device())).to(
                 self.device
             )
+        else:
+            return X0Model(
+                self.transformer_builder.build(
+                    device=self._target_device(), dtype=self.dtype
+                )
+            ).to(self.device)
 
     def video_decoder(self) -> VideoDecoder:
         if not hasattr(self, "vae_decoder_builder"):
@@ -217,7 +221,9 @@ class ModelLedger:
                 "Video decoder not initialized. Please provide a checkpoint path to the ModelLedger constructor."
             )
 
-        return self.vae_decoder_builder.build(device=self._target_device(), dtype=self.dtype).to(self.device)
+        return self.vae_decoder_builder.build(
+            device=self._target_device(), dtype=self.dtype
+        ).to(self.device)
 
     def video_encoder(self) -> VideoEncoder:
         if not hasattr(self, "vae_encoder_builder"):
@@ -225,7 +231,9 @@ class ModelLedger:
                 "Video encoder not initialized. Please provide a checkpoint path to the ModelLedger constructor."
             )
 
-        return self.vae_encoder_builder.build(device=self._target_device(), dtype=self.dtype).to(self.device)
+        return self.vae_encoder_builder.build(
+            device=self._target_device(), dtype=self.dtype
+        ).to(self.device)
 
     def text_encoder(self) -> AVGemmaTextEncoderModel:
         if not hasattr(self, "text_encoder_builder"):
@@ -234,7 +242,9 @@ class ModelLedger:
                 "ModelLedger constructor."
             )
 
-        return self.text_encoder_builder.build(device=self._target_device(), dtype=self.dtype).to(self.device)
+        return self.text_encoder_builder.build(
+            device=self._target_device(), dtype=self.dtype
+        ).to(self.device)
 
     def audio_decoder(self) -> AudioDecoder:
         if not hasattr(self, "audio_decoder_builder"):
@@ -242,7 +252,9 @@ class ModelLedger:
                 "Audio decoder not initialized. Please provide a checkpoint path to the ModelLedger constructor."
             )
 
-        return self.audio_decoder_builder.build(device=self._target_device(), dtype=self.dtype).to(self.device)
+        return self.audio_decoder_builder.build(
+            device=self._target_device(), dtype=self.dtype
+        ).to(self.device)
 
     def audio_encoder(self) -> AudioEncoder:
         if not hasattr(self, "audio_encoder_builder"):
@@ -250,7 +262,9 @@ class ModelLedger:
                 "Audio encoder not initialized. Please provide a checkpoint path to the ModelLedger constructor."
             )
 
-        return self.audio_encoder_builder.build(device=self._target_device(), dtype=self.dtype).to(self.device)
+        return self.audio_encoder_builder.build(
+            device=self._target_device(), dtype=self.dtype
+        ).to(self.device)
 
     def vocoder(self) -> Vocoder:
         if not hasattr(self, "vocoder_builder"):
@@ -258,10 +272,16 @@ class ModelLedger:
                 "Vocoder not initialized. Please provide a checkpoint path to the ModelLedger constructor."
             )
 
-        return self.vocoder_builder.build(device=self._target_device(), dtype=self.dtype).to(self.device)
+        return self.vocoder_builder.build(
+            device=self._target_device(), dtype=self.dtype
+        ).to(self.device)
 
     def spatial_upsampler(self) -> LatentUpsampler:
         if not hasattr(self, "upsampler_builder"):
-            raise ValueError("Upsampler not initialized. Please provide upsampler path to the ModelLedger constructor.")
+            raise ValueError(
+                "Upsampler not initialized. Please provide upsampler path to the ModelLedger constructor."
+            )
 
-        return self.upsampler_builder.build(device=self._target_device(), dtype=self.dtype).to(self.device)
+        return self.upsampler_builder.build(
+            device=self._target_device(), dtype=self.dtype
+        ).to(self.device)

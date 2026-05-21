@@ -23,10 +23,18 @@ class AttnBlock(torch.nn.Module):
         self.in_channels = in_channels
 
         self.norm = build_normalization_layer(in_channels, normtype=norm_type)
-        self.q = torch.nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, padding=0)
-        self.k = torch.nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, padding=0)
-        self.v = torch.nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, padding=0)
-        self.proj_out = torch.nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, padding=0)
+        self.q = torch.nn.Conv2d(
+            in_channels, in_channels, kernel_size=1, stride=1, padding=0
+        )
+        self.k = torch.nn.Conv2d(
+            in_channels, in_channels, kernel_size=1, stride=1, padding=0
+        )
+        self.v = torch.nn.Conv2d(
+            in_channels, in_channels, kernel_size=1, stride=1, padding=0
+        )
+        self.proj_out = torch.nn.Conv2d(
+            in_channels, in_channels, kernel_size=1, stride=1, padding=0
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         h_ = x
@@ -47,7 +55,9 @@ class AttnBlock(torch.nn.Module):
         # attend to values
         v = v.reshape(b, c, h * w).contiguous()
         w_ = w_.permute(0, 2, 1).contiguous()  # b,hw,hw (first hw of k, second of q)
-        h_ = torch.bmm(v, w_).contiguous()  # b, c,hw (hw of q) h_[b,c,j] = sum_i v[b,c,i] w_[b,i,j]
+        h_ = torch.bmm(
+            v, w_
+        ).contiguous()  # b, c,hw (hw of q) h_[b,c,j] = sum_i v[b,c,i] w_[b,i,j]
         h_ = h_.reshape(b, c, h, w).contiguous()
 
         h_ = self.proj_out(h_)
@@ -66,6 +76,8 @@ def make_attn(
         case AttentionType.NONE:
             return torch.nn.Identity()
         case AttentionType.LINEAR:
-            raise NotImplementedError(f"Attention type {attn_type.value} is not supported yet.")
+            raise NotImplementedError(
+                f"Attention type {attn_type.value} is not supported yet."
+            )
         case _:
             raise ValueError(f"Unknown attention type: {attn_type}")

@@ -123,12 +123,18 @@ def caption_media(
     if override:
         media_to_process = media_files
     else:
-        media_to_process = [f for f in media_files if str(f.resolve()) not in existing_abs_paths]
+        media_to_process = [
+            f for f in media_files if str(f.resolve()) not in existing_abs_paths
+        ]
         if skipped := len(media_files) - len(media_to_process):
-            console.print(f"[bold yellow]Skipping {skipped} media that already have captions.[/]")
+            console.print(
+                f"[bold yellow]Skipping {skipped} media that already have captions.[/]"
+            )
 
     if not media_to_process:
-        console.print("[bold yellow]All media already have captions. Use --override to recaption.[/]")
+        console.print(
+            "[bold yellow]All media already have captions. Use --override to recaption.[/]"
+        )
         return
 
     # Process media files
@@ -149,7 +155,9 @@ def caption_media(
         task = progress.add_task("Captioning", total=len(media_to_process))
 
         for i, media_file in enumerate(media_to_process):
-            progress.update(task, description=f"Captioning [bold blue]{media_file.name}[/]")
+            progress.update(
+                task, description=f"Captioning [bold blue]{media_file.name}[/]"
+            )
 
             try:
                 # Generate caption for the media
@@ -198,13 +206,17 @@ def _get_media_files(
         if input_path.suffix.lstrip(".").lower() in extensions_set:
             return [input_path]
         else:
-            typer.echo(f"Warning: {input_path} is not a recognized media file. Skipping.")
+            typer.echo(
+                f"Warning: {input_path} is not a recognized media file. Skipping."
+            )
             return []
     elif input_path.is_dir():
         # Find all files and filter by extension case-insensitively
         glob_pattern = "**/*" if recursive else "*"
         media_files = [
-            f for f in input_path.glob(glob_pattern) if f.is_file() and f.suffix.lstrip(".").lower() in extensions_set
+            f
+            for f in input_path.glob(glob_pattern)
+            if f.is_file() and f.suffix.lstrip(".").lower() in extensions_set
         ]
         return sorted(media_files)
     else:
@@ -243,8 +255,12 @@ def _save_captions(
                 for media_path in captions:
                     f.write(f"{media_path}\n")
 
-            console.print(f"[bold green]✓[/] Captions saved to [cyan]{captions_file}[/]")
-            console.print(f"[bold green]✓[/] Media paths saved to [cyan]{paths_file}[/]")
+            console.print(
+                f"[bold green]✓[/] Captions saved to [cyan]{captions_file}[/]"
+            )
+            console.print(
+                f"[bold green]✓[/] Media paths saved to [cyan]{paths_file}[/]"
+            )
 
         case OutputFormat.CSV:
             with output_path.open("w", encoding="utf-8", newline="") as f:
@@ -257,7 +273,10 @@ def _save_captions(
 
         case OutputFormat.JSON:
             # Format as list of dictionaries with caption and media_path keys
-            json_data = [{"caption": caption, "media_path": media_path} for media_path, caption in captions.items()]
+            json_data = [
+                {"caption": caption, "media_path": media_path}
+                for media_path, caption in captions.items()
+            ]
 
             with output_path.open("w", encoding="utf-8") as f:
                 json.dump(json_data, f, indent=2, ensure_ascii=False)
@@ -267,7 +286,13 @@ def _save_captions(
         case OutputFormat.JSONL:
             with output_path.open("w", encoding="utf-8") as f:
                 for media_path, caption in captions.items():
-                    f.write(json.dumps({"caption": caption, "media_path": media_path}, ensure_ascii=False) + "\n")
+                    f.write(
+                        json.dumps(
+                            {"caption": caption, "media_path": media_path},
+                            ensure_ascii=False,
+                        )
+                        + "\n"
+                    )
 
             console.print(f"[bold green]✓[/] Captions saved to [cyan]{output_path}[/]")
 
@@ -291,7 +316,9 @@ def _load_existing_captions(  # noqa: PLR0912
     if not output_path.exists():
         return {}
 
-    console.print(f"[bold blue]Loading existing captions from [cyan]{output_path}[/]...[/]")
+    console.print(
+        f"[bold blue]Loading existing captions from [cyan]{output_path}[/]...[/]"
+    )
 
     existing_captions = {}
 
@@ -336,7 +363,9 @@ def _load_existing_captions(  # noqa: PLR0912
             case _:
                 raise ValueError(f"Unsupported output format: {format_type}")
 
-        console.print(f"[bold green]✓[/] Loaded [bold]{len(existing_captions)}[/] existing captions")
+        console.print(
+            f"[bold green]✓[/] Loaded [bold]{len(existing_captions)}[/] existing captions"
+        )
         return existing_captions
 
     except Exception as e:
@@ -485,7 +514,9 @@ def main(  # noqa: PLR0913
         else:
             raise ValueError(f"Unsupported captioner type: {captioner_type}")
 
-        console.print(f"[bold green]✓[/] {captioner_type.value} captioning model loaded successfully")
+        console.print(
+            f"[bold green]✓[/] {captioner_type.value} captioning model loaded successfully"
+        )
 
     # Caption media files
     caption_media(

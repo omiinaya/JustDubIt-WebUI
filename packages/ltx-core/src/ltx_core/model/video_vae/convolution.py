@@ -80,9 +80,13 @@ def make_linear_nd(
     bias: bool = True,
 ) -> nn.Module:
     if dims == 2:
-        return nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=1, bias=bias)
+        return nn.Conv2d(
+            in_channels=in_channels, out_channels=out_channels, kernel_size=1, bias=bias
+        )
     elif dims in (3, (2, 1)):
-        return nn.Conv3d(in_channels=in_channels, out_channels=out_channels, kernel_size=1, bias=bias)
+        return nn.Conv3d(
+            in_channels=in_channels, out_channels=out_channels, kernel_size=1, bias=bias
+        )
     else:
         raise ValueError(f"unsupported dimensions: {dims}")
 
@@ -109,7 +113,9 @@ class DualConv3d(nn.Module):
         if isinstance(kernel_size, int):
             kernel_size = (kernel_size, kernel_size, kernel_size)
         if kernel_size == (1, 1, 1):
-            raise ValueError("kernel_size must be greater than 1. Use make_linear_nd instead.")
+            raise ValueError(
+                "kernel_size must be greater than 1. Use make_linear_nd instead."
+            )
         if isinstance(stride, int):
             stride = (stride, stride, stride)
         if isinstance(padding, int):
@@ -122,7 +128,9 @@ class DualConv3d(nn.Module):
         self.bias = bias
 
         # Define the size of the channels after the first convolution
-        intermediate_channels = out_channels if in_channels < out_channels else in_channels
+        intermediate_channels = (
+            out_channels if in_channels < out_channels else in_channels
+        )
 
         # Define parameters for the first convolution
         self.weight1 = nn.Parameter(
@@ -143,7 +151,11 @@ class DualConv3d(nn.Module):
             self.register_parameter("bias1", None)
 
         # Define parameters for the second convolution
-        self.weight2 = nn.Parameter(torch.Tensor(out_channels, intermediate_channels // groups, kernel_size[0], 1, 1))
+        self.weight2 = nn.Parameter(
+            torch.Tensor(
+                out_channels, intermediate_channels // groups, kernel_size[0], 1, 1
+            )
+        )
         self.stride2 = (stride[0], 1, 1)
         self.padding2 = (padding[0], 0, 0)
         self.dilation2 = (dilation[0], 1, 1)
@@ -177,7 +189,9 @@ class DualConv3d(nn.Module):
         else:
             return self.forward_with_2d(x=x, skip_time_conv=skip_time_conv)
 
-    def forward_with_3d(self, x: torch.Tensor, skip_time_conv: bool = False) -> torch.Tensor:
+    def forward_with_3d(
+        self, x: torch.Tensor, skip_time_conv: bool = False
+    ) -> torch.Tensor:
         # First convolution
         x = F.conv3d(
             x,
@@ -207,7 +221,9 @@ class DualConv3d(nn.Module):
 
         return x
 
-    def forward_with_2d(self, x: torch.Tensor, skip_time_conv: bool = False) -> torch.Tensor:
+    def forward_with_2d(
+        self, x: torch.Tensor, skip_time_conv: bool = False
+    ) -> torch.Tensor:
         b, _, _, h, w = x.shape
 
         # First 2D convolution
@@ -303,11 +319,17 @@ class CausalConv3d(nn.Module):
 
     def forward(self, x: torch.Tensor, causal: bool = True) -> torch.Tensor:
         if causal:
-            first_frame_pad = x[:, :, :1, :, :].repeat((1, 1, self.time_kernel_size - 1, 1, 1))
+            first_frame_pad = x[:, :, :1, :, :].repeat(
+                (1, 1, self.time_kernel_size - 1, 1, 1)
+            )
             x = torch.concatenate((first_frame_pad, x), dim=2)
         else:
-            first_frame_pad = x[:, :, :1, :, :].repeat((1, 1, (self.time_kernel_size - 1) // 2, 1, 1))
-            last_frame_pad = x[:, :, -1:, :, :].repeat((1, 1, (self.time_kernel_size - 1) // 2, 1, 1))
+            first_frame_pad = x[:, :, :1, :, :].repeat(
+                (1, 1, (self.time_kernel_size - 1) // 2, 1, 1)
+            )
+            last_frame_pad = x[:, :, -1:, :, :].repeat(
+                (1, 1, (self.time_kernel_size - 1) // 2, 1, 1)
+            )
             x = torch.concatenate((first_frame_pad, x, last_frame_pad), dim=2)
         x = self.conv(x)
         return x

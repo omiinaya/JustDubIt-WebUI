@@ -59,11 +59,15 @@ class Vocoder(torch.nn.Module):
         self.num_kernels = len(resblock_kernel_sizes)
         self.num_upsamples = len(upsample_rates)
         in_channels = 128 if stereo else 64
-        self.conv_pre = nn.Conv1d(in_channels, upsample_initial_channel, 7, 1, padding=3)
+        self.conv_pre = nn.Conv1d(
+            in_channels, upsample_initial_channel, 7, 1, padding=3
+        )
         resblock_class = ResBlock1 if resblock == "1" else ResBlock2
 
         self.ups = nn.ModuleList()
-        for i, (stride, kernel_size) in enumerate(zip(upsample_rates, upsample_kernel_sizes, strict=True)):
+        for i, (stride, kernel_size) in enumerate(
+            zip(upsample_rates, upsample_kernel_sizes, strict=True)
+        ):
             self.ups.append(
                 nn.ConvTranspose1d(
                     upsample_initial_channel // (2**i),
@@ -77,7 +81,9 @@ class Vocoder(torch.nn.Module):
         self.resblocks = nn.ModuleList()
         for i, _ in enumerate(self.ups):
             ch = upsample_initial_channel // (2 ** (i + 1))
-            for kernel_size, dilations in zip(resblock_kernel_sizes, resblock_dilation_sizes, strict=True):
+            for kernel_size, dilations in zip(
+                resblock_kernel_sizes, resblock_dilation_sizes, strict=True
+            ):
                 self.resblocks.append(resblock_class(ch, kernel_size, dilations))
 
         out_channels = 2 if stereo else 1
@@ -98,7 +104,9 @@ class Vocoder(torch.nn.Module):
         Returns:
             Audio waveform tensor of shape (batch_size, out_channels, audio_length)
         """
-        x = x.transpose(2, 3)  # (batch, channels, time, mel_bins) -> (batch, channels, mel_bins, time)
+        x = x.transpose(
+            2, 3
+        )  # (batch, channels, time, mel_bins) -> (batch, channels, mel_bins, time)
 
         if x.dim() == 4:  # stereo
             assert x.shape[1] == 2, "Input must have 2 channels for stereo"

@@ -129,8 +129,12 @@ def _save_dataset_json(
     with output_path.open("w", encoding="utf-8") as f:
         json.dump(new_json_data, f, indent=2, ensure_ascii=False)
 
-    console.print(f"[bold green]✓[/] Reference video paths saved to [cyan]{output_path}[/]")
-    console.print("[bold yellow]Note:[/] Use these files with ImageOrVideoDataset by setting:")
+    console.print(
+        f"[bold green]✓[/] Reference video paths saved to [cyan]{output_path}[/]"
+    )
+    console.print(
+        "[bold yellow]Note:[/] Use these files with ImageOrVideoDataset by setting:"
+    )
     console.print("  reference_column='[cyan]reference_path[/]'")
     console.print("  video_column='[cyan]media_path[/]'")
 
@@ -157,7 +161,9 @@ def process_media(
     meta_data = _get_meta_data(output_path)
 
     base_dir = input_path.resolve()
-    console.print(f"Using [bold blue]{base_dir}[/] as base directory for relative paths")
+    console.print(
+        f"Using [bold blue]{base_dir}[/] as base directory for relative paths"
+    )
 
     # Filter media files
     media_to_process = []
@@ -187,13 +193,20 @@ def process_media(
 
     # Process media files
     media_paths = [item["media_path"] for item in meta_data]
-    reference_paths = {rel_path: str(media_path_to_reference_path(Path(rel_path))) for rel_path in media_paths}
+    reference_paths = {
+        rel_path: str(media_path_to_reference_path(Path(rel_path)))
+        for rel_path in media_paths
+    }
 
     with progress:
-        task = progress.add_task("Computing condition on videos", total=len(media_to_process))
+        task = progress.add_task(
+            "Computing condition on videos", total=len(media_to_process)
+        )
 
         for media_file in media_to_process:
-            progress.update(task, description=f"Processing [bold blue]{media_file.name}[/]")
+            progress.update(
+                task, description=f"Processing [bold blue]{media_file.name}[/]"
+            )
 
             rel_path = str(media_file.resolve().relative_to(base_dir))
             reference_path = media_path_to_reference_path(media_file)
@@ -218,7 +231,9 @@ def process_media(
                     save_video(all_condition, reference_path.resolve(), fps=fps)
 
                 except Exception as e:
-                    console.print(f"[bold red]Error processing [bold blue]{media_file}[/]: {e}[/]")
+                    console.print(
+                        f"[bold red]Error processing [bold blue]{media_file}[/]: {e}[/]"
+                    )
                     reference_paths.pop(rel_path)
             else:
                 skipped_media.append(media_file)
@@ -283,7 +298,9 @@ def main(
 
     # Verify output path exists
     if not output.exists():
-        raise FileNotFoundError(f"Output file does not exist: {output}. This is also the input file for the dataset.")
+        raise FileNotFoundError(
+            f"Output file does not exist: {output}. This is also the input file for the dataset."
+        )
 
     # Process media files
     process_media(

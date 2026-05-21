@@ -3,7 +3,9 @@ from typing import Any
 import torch
 
 
-def rms_norm(x: torch.Tensor, weight: torch.Tensor | None = None, eps: float = 1e-6) -> torch.Tensor:
+def rms_norm(
+    x: torch.Tensor, weight: torch.Tensor | None = None, eps: float = 1e-6
+) -> torch.Tensor:
     """Root-mean-square (RMS) normalize `x` over its last dimension.
 
     Thin wrapper around `torch.nn.functional.rms_norm` that infers the normalized
@@ -34,7 +36,9 @@ def to_velocity(
         sigma = sigma.to(calc_dtype).item()
     if sigma == 0:
         raise ValueError("Sigma can't be 0.0")
-    return ((sample.to(calc_dtype) - denoised_sample.to(calc_dtype)) / sigma).to(sample.dtype)
+    return ((sample.to(calc_dtype) - denoised_sample.to(calc_dtype)) / sigma).to(
+        sample.dtype
+    )
 
 
 def to_denoised(

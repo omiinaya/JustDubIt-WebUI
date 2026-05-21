@@ -79,7 +79,9 @@ def extract_lora_target_modules(state_dict: dict[str, torch.Tensor]) -> list[str
     return sorted(target_modules)
 
 
-def load_lora_weights(transformer: torch.nn.Module, lora_path: str | Path) -> torch.nn.Module:
+def load_lora_weights(
+    transformer: torch.nn.Module, lora_path: str | Path
+) -> torch.nn.Module:
     """Load LoRA weights into the transformer model.
 
     The LoRA rank and target modules are automatically detected from the checkpoint.
@@ -98,12 +100,16 @@ def load_lora_weights(transformer: torch.nn.Module, lora_path: str | Path) -> to
     state_dict = load_file(str(lora_path))
 
     # Remove "diffusion_model." prefix (ComfyUI-compatible format)
-    state_dict = {k.replace("diffusion_model.", "", 1): v for k, v in state_dict.items()}
+    state_dict = {
+        k.replace("diffusion_model.", "", 1): v for k, v in state_dict.items()
+    }
 
     # Extract target modules from the checkpoint
     target_modules = extract_lora_target_modules(state_dict)
     if not target_modules:
-        raise ValueError(f"Could not extract target modules from LoRA checkpoint: {lora_path}")
+        raise ValueError(
+            f"Could not extract target modules from LoRA checkpoint: {lora_path}"
+        )
     print(f"  Detected {len(target_modules)} target modules")
 
     # Auto-detect rank from the first lora_A weight shape
@@ -323,7 +329,9 @@ def main() -> None:  # noqa: PLR0912, PLR0915
 
     # Determine if we need VAE encoder (for image or video conditioning)
     need_vae_encoder = (
-        args.condition_image is not None or args.reference_video is not None or args.input_json is not None
+        args.condition_image is not None
+        or args.reference_video is not None
+        or args.input_json is not None
     )
 
     # Determine if we need audio VAE encoder (for reference audio conditioning)
@@ -358,7 +366,9 @@ def main() -> None:  # noqa: PLR0912, PLR0915
         num_frames = [item["num_frames"] for item in data]
         heights = [item["height"] for item in data]
         widths = [item["width"] for item in data]
-        print(f"Loaded {len(reference_videos)} reference videos, and {len(prompts)} prompts from {args.input_json}")
+        print(
+            f"Loaded {len(reference_videos)} reference videos, and {len(prompts)} prompts from {args.input_json}"
+        )
     else:
         reference_videos = [args.reference_video]
         prompts = [args.prompt]
@@ -366,7 +376,9 @@ def main() -> None:  # noqa: PLR0912, PLR0915
         widths = [args.width]
         heights = [args.height]
 
-    for sample_idx, (reference_video, prompt) in enumerate(zip(reference_videos, prompts, strict=False)):
+    for sample_idx, (reference_video, prompt) in enumerate(
+        zip(reference_videos, prompts, strict=False)
+    ):
         args.reference_video = reference_video
         if not isinstance(prompt, str):
             with open(prompt, "r") as f:
@@ -388,7 +400,9 @@ def main() -> None:  # noqa: PLR0912, PLR0915
         reference_video = None  # noqa: PLW2901
         if args.reference_video:
             print(f"Loading reference video from {args.reference_video}...")
-            reference_video, ref_fps = read_video(args.reference_video, max_frames=args.num_frames)  # noqa: PLW2901
+            reference_video, ref_fps = read_video(
+                args.reference_video, max_frames=args.num_frames
+            )  # noqa: PLW2901
             print(f"  Loaded {reference_video.shape[0]} frames @ {ref_fps:.1f} fps")
             valid_frames = (reference_video.shape[0] - 1) // 8 * 8 + 1
             print(f"  Update num_frames to {valid_frames}")
@@ -400,7 +414,9 @@ def main() -> None:  # noqa: PLR0912, PLR0915
             print(f"Loading reference audio from {args.reference_video}...")
             # Calculate target duration based on video parameters
             target_duration = args.num_frames / args.frame_rate
-            reference_audio = read_audio(args.reference_video, target_duration=target_duration)
+            reference_audio = read_audio(
+                args.reference_video, target_duration=target_duration
+            )
             print(
                 f"  Loaded audio: {reference_audio['waveform'].shape[1]} samples @ {reference_audio['sample_rate']}Hz"
             )
@@ -430,7 +446,9 @@ def main() -> None:  # noqa: PLR0912, PLR0915
         print(f"CFG guidance scale: {args.guidance_scale}")
         if args.stg_scale > 0:
             blocks_str = args.stg_blocks if args.stg_blocks else "all"
-            print(f"STG scale: {args.stg_scale} (mode: {args.stg_mode}, blocks: {blocks_str})")
+            print(
+                f"STG scale: {args.stg_scale} (mode: {args.stg_mode}, blocks: {blocks_str})"
+            )
         else:
             print("STG: disabled")
         print(f"Seed: {args.seed}")
@@ -443,7 +461,9 @@ def main() -> None:  # noqa: PLR0912, PLR0915
             if args.include_reference_in_output:
                 print("  → Will include reference side-by-side in output")
         if reference_audio is not None:
-            audio_duration = reference_audio["waveform"].shape[1] / reference_audio["sample_rate"]
+            audio_duration = (
+                reference_audio["waveform"].shape[1] / reference_audio["sample_rate"]
+            )
             print(f"Reference Audio: {args.reference_video} ({audio_duration:.2f}s)")
         if generate_audio:
             video_duration = args.num_frames / args.frame_rate

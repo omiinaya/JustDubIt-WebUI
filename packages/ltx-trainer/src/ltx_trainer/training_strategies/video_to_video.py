@@ -115,7 +115,9 @@ class VideoToVideoStrategy(TrainingStrategy):
 
         # Create conditioning mask
         # Reference tokens are always conditioning (timestep=0)
-        ref_conditioning_mask = torch.ones(batch_size, ref_seq_len, dtype=torch.bool, device=device)
+        ref_conditioning_mask = torch.ones(
+            batch_size, ref_seq_len, dtype=torch.bool, device=device
+        )
 
         # Target tokens: check for first frame conditioning
         target_conditioning_mask = self._create_first_frame_conditioning_mask(
@@ -128,7 +130,9 @@ class VideoToVideoStrategy(TrainingStrategy):
         )
 
         # Combined conditioning mask
-        conditioning_mask = torch.cat([ref_conditioning_mask, target_conditioning_mask], dim=1)
+        conditioning_mask = torch.cat(
+            [ref_conditioning_mask, target_conditioning_mask], dim=1
+        )
 
         # Sample noise and sigmas for target
         sigmas = timestep_sampler.sample_for(target_latents)
@@ -140,7 +144,9 @@ class VideoToVideoStrategy(TrainingStrategy):
 
         # For first frame conditioning in target, use clean latents
         target_conditioning_mask_expanded = target_conditioning_mask.unsqueeze(-1)
-        noisy_target = torch.where(target_conditioning_mask_expanded, target_latents, noisy_target)
+        noisy_target = torch.where(
+            target_conditioning_mask_expanded, target_latents, noisy_target
+        )
 
         # Targets for loss computation
         targets = noise - target_latents
@@ -149,7 +155,9 @@ class VideoToVideoStrategy(TrainingStrategy):
         combined_latents = torch.cat([ref_latents, noisy_target], dim=1)
 
         # Create per-token timesteps
-        timesteps = self._create_per_token_timesteps(conditioning_mask, sigmas.squeeze())
+        timesteps = self._create_per_token_timesteps(
+            conditioning_mask, sigmas.squeeze()
+        )
 
         # Generate positions for reference and target separately, then concatenate
         ref_positions = self._get_video_positions(
@@ -188,7 +196,9 @@ class VideoToVideoStrategy(TrainingStrategy):
         # Loss mask: only compute loss on non-conditioning target tokens
         # Reference tokens: all False (no loss)
         # Target tokens: True where not conditioning
-        ref_loss_mask = torch.zeros(batch_size, ref_seq_len, dtype=torch.bool, device=device)
+        ref_loss_mask = torch.zeros(
+            batch_size, ref_seq_len, dtype=torch.bool, device=device
+        )
         target_loss_mask = ~target_conditioning_mask
         video_loss_mask = torch.cat([ref_loss_mask, target_loss_mask], dim=1)
 

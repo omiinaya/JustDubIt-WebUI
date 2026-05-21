@@ -49,28 +49,40 @@ class LatentUpsampler(torch.nn.Module):
         self.initial_norm = torch.nn.GroupNorm(32, mid_channels)
         self.initial_activation = torch.nn.SiLU()
 
-        self.res_blocks = torch.nn.ModuleList([ResBlock(mid_channels, dims=dims) for _ in range(num_blocks_per_stage)])
+        self.res_blocks = torch.nn.ModuleList(
+            [ResBlock(mid_channels, dims=dims) for _ in range(num_blocks_per_stage)]
+        )
 
         if spatial_upsample and temporal_upsample:
             self.upsampler = torch.nn.Sequential(
-                torch.nn.Conv3d(mid_channels, 8 * mid_channels, kernel_size=3, padding=1),
+                torch.nn.Conv3d(
+                    mid_channels, 8 * mid_channels, kernel_size=3, padding=1
+                ),
                 PixelShuffleND(3),
             )
         elif spatial_upsample:
             if rational_resampler:
-                self.upsampler = SpatialRationalResampler(mid_channels=mid_channels, scale=self.spatial_scale)
+                self.upsampler = SpatialRationalResampler(
+                    mid_channels=mid_channels, scale=self.spatial_scale
+                )
             else:
                 self.upsampler = torch.nn.Sequential(
-                    torch.nn.Conv2d(mid_channels, 4 * mid_channels, kernel_size=3, padding=1),
+                    torch.nn.Conv2d(
+                        mid_channels, 4 * mid_channels, kernel_size=3, padding=1
+                    ),
                     PixelShuffleND(2),
                 )
         elif temporal_upsample:
             self.upsampler = torch.nn.Sequential(
-                torch.nn.Conv3d(mid_channels, 2 * mid_channels, kernel_size=3, padding=1),
+                torch.nn.Conv3d(
+                    mid_channels, 2 * mid_channels, kernel_size=3, padding=1
+                ),
                 PixelShuffleND(1),
             )
         else:
-            raise ValueError("Either spatial_upsample or temporal_upsample must be True")
+            raise ValueError(
+                "Either spatial_upsample or temporal_upsample must be True"
+            )
 
         self.post_upsample_res_blocks = torch.nn.ModuleList(
             [ResBlock(mid_channels, dims=dims) for _ in range(num_blocks_per_stage)]

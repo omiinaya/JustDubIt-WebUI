@@ -2,7 +2,9 @@ from typing import Optional, Tuple
 
 import torch
 
-from ltx_core.model.transformer.timestep_embedding import PixArtAlphaCombinedTimestepSizeEmbeddings
+from ltx_core.model.transformer.timestep_embedding import (
+    PixArtAlphaCombinedTimestepSizeEmbeddings,
+)
 
 
 class AdaLayerNormSingle(torch.nn.Module):
@@ -25,7 +27,9 @@ class AdaLayerNormSingle(torch.nn.Module):
         )
 
         self.silu = torch.nn.SiLU()
-        self.linear = torch.nn.Linear(embedding_dim, embedding_coefficient * embedding_dim, bias=True)
+        self.linear = torch.nn.Linear(
+            embedding_dim, embedding_coefficient * embedding_dim, bias=True
+        )
 
     def forward(
         self,

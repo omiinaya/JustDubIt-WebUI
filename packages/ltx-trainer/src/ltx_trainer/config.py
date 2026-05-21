@@ -1,7 +1,16 @@
 from pathlib import Path
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Discriminator, Field, Tag, ValidationInfo, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Discriminator,
+    Field,
+    Tag,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from ltx_trainer.quantization import QuantizationOptions
 from ltx_trainer.training_strategies.base_strategy import TrainingStrategyConfigBase
@@ -233,7 +242,9 @@ class ValidationConfig(ConfigBaseModel):
         if height % 32 != 0:
             raise ValueError(f"Height ({height}) must be divisible by 32")
         if frames % 8 != 1:
-            raise ValueError(f"Frames ({frames}) must satisfy frames % 8 == 1 for LTX-2 (e.g., 1, 9, 17, 25, ...)")
+            raise ValueError(
+                f"Frames ({frames}) must satisfy frames % 8 == 1 for LTX-2 (e.g., 1, 9, 17, 25, ...)"
+            )
 
         return v
 
@@ -316,14 +327,18 @@ class ValidationConfig(ConfigBaseModel):
 
     @field_validator("images")
     @classmethod
-    def validate_images(cls, v: list[str] | None, info: ValidationInfo) -> list[str] | None:
+    def validate_images(
+        cls, v: list[str] | None, info: ValidationInfo
+    ) -> list[str] | None:
         """Validate that number of images (if provided) matches number of prompts."""
         if v is None:
             return None
 
         num_prompts = len(info.data.get("prompts", []))
         if v is not None and len(v) != num_prompts:
-            raise ValueError(f"Number of images ({len(v)}) must match number of prompts ({num_prompts})")
+            raise ValueError(
+                f"Number of images ({len(v)}) must match number of prompts ({num_prompts})"
+            )
 
         for image_path in v:
             if not Path(image_path).exists():
@@ -333,14 +348,18 @@ class ValidationConfig(ConfigBaseModel):
 
     @field_validator("reference_videos")
     @classmethod
-    def validate_reference_videos(cls, v: list[str] | None, info: ValidationInfo) -> list[str] | None:
+    def validate_reference_videos(
+        cls, v: list[str] | None, info: ValidationInfo
+    ) -> list[str] | None:
         """Validate that number of reference videos (if provided) matches number of prompts."""
         if v is None:
             return None
 
         num_prompts = len(info.data.get("prompts", []))
         if v is not None and len(v) != num_prompts:
-            raise ValueError(f"Number of reference videos ({len(v)}) must match number of prompts ({num_prompts})")
+            raise ValueError(
+                f"Number of reference videos ({len(v)}) must match number of prompts ({num_prompts})"
+            )
 
         for video_path in v:
             if not Path(video_path).exists():
@@ -368,9 +387,13 @@ class CheckpointsConfig(ConfigBaseModel):
 class HubConfig(ConfigBaseModel):
     """Configuration for Hugging Face Hub integration"""
 
-    push_to_hub: bool = Field(default=False, description="Whether to push the model weights to the Hugging Face Hub")
+    push_to_hub: bool = Field(
+        default=False,
+        description="Whether to push the model weights to the Hugging Face Hub",
+    )
     hub_model_id: str | None = Field(
-        default=None, description="Hugging Face Hub repository ID (e.g., 'username/repo-name')"
+        default=None,
+        description="Hugging Face Hub repository ID (e.g., 'username/repo-name')",
     )
 
     @model_validator(mode="after")
@@ -477,10 +500,17 @@ class LtxTrainerConfig(ConfigBaseModel):
 
         # Check that LoRA config is provided when training mode is lora
         if self.model.training_mode == "lora" and self.lora is None:
-            raise ValueError("LoRA configuration must be provided when training_mode is 'lora'")
+            raise ValueError(
+                "LoRA configuration must be provided when training_mode is 'lora'"
+            )
 
         # Check that LoRA config is provided when using video_to_video strategy
-        if self.training_strategy.name == "video_to_video" and self.model.training_mode != "lora":
-            raise ValueError("Training mode must be 'lora' when using video_to_video strategy")
+        if (
+            self.training_strategy.name == "video_to_video"
+            and self.model.training_mode != "lora"
+        ):
+            raise ValueError(
+                "Training mode must be 'lora' when using video_to_video strategy"
+            )
 
         return self

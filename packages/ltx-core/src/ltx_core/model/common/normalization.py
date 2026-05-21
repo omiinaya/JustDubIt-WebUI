@@ -56,7 +56,9 @@ def build_normalization_layer(
         A normalization layer
     """
     if normtype == NormType.GROUP:
-        return torch.nn.GroupNorm(num_groups=num_groups, num_channels=in_channels, eps=1e-6, affine=True)
+        return torch.nn.GroupNorm(
+            num_groups=num_groups, num_channels=in_channels, eps=1e-6, affine=True
+        )
     if normtype == NormType.PIXEL:
         return PixelNorm(dim=1, eps=1e-6)
     raise ValueError(f"Invalid normalization type: {normtype}")

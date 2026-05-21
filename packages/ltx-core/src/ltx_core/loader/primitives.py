@@ -43,7 +43,12 @@ class StateDictLoader(Protocol):
         Load metadata from path
         """
 
-    def load(self, path: str | list[str], sd_ops: SDOps | None = None, device: torch.device | None = None) -> StateDict:
+    def load(
+        self,
+        path: str | list[str],
+        sd_ops: SDOps | None = None,
+        device: torch.device | None = None,
+    ) -> StateDict:
         """
         Load state dict from path or paths (for sharded model storage) and apply sd_ops
         """
@@ -58,7 +63,9 @@ class ModelBuilderProtocol(Protocol[ModelType]):
     - build: Create and initialize a model from state dictionary and apply dtype transformations
     """
 
-    def meta_model(self, config: dict, module_ops: list[ModuleOps] | None = None) -> ModelType:
+    def meta_model(
+        self, config: dict, module_ops: list[ModuleOps] | None = None
+    ) -> ModelType:
         """
         Create a model on the meta device from a configuration dictionary.
 

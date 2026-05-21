@@ -39,7 +39,12 @@ class CausalConv2d(torch.nn.Module):
         # The padding tuple for F.pad is (pad_left, pad_right, pad_top, pad_bottom)
         match self.causality_axis:
             case CausalityAxis.NONE:
-                self.padding = (pad_w // 2, pad_w - pad_w // 2, pad_h // 2, pad_h - pad_h // 2)
+                self.padding = (
+                    pad_w // 2,
+                    pad_w - pad_w // 2,
+                    pad_h // 2,
+                    pad_h - pad_h // 2,
+                )
             case CausalityAxis.WIDTH | CausalityAxis.WIDTH_COMPATIBILITY:
                 self.padding = (pad_w, 0, pad_h // 2, pad_h - pad_h // 2)
             case CausalityAxis.HEIGHT:
@@ -95,11 +100,24 @@ def make_conv2d(
     """
     if causality_axis is not None:
         # For causal convolution, padding is handled internally by CausalConv2d
-        return CausalConv2d(in_channels, out_channels, kernel_size, stride, dilation, groups, bias, causality_axis)
+        return CausalConv2d(
+            in_channels,
+            out_channels,
+            kernel_size,
+            stride,
+            dilation,
+            groups,
+            bias,
+            causality_axis,
+        )
     else:
         # For non-causal convolution, use symmetric padding if not specified
         if padding is None:
-            padding = kernel_size // 2 if isinstance(kernel_size, int) else tuple(k // 2 for k in kernel_size)
+            padding = (
+                kernel_size // 2
+                if isinstance(kernel_size, int)
+                else tuple(k // 2 for k in kernel_size)
+            )
 
         return torch.nn.Conv2d(
             in_channels,

@@ -37,9 +37,19 @@ def print_config(config: LtxTrainerConfig) -> None:
             "🎬 Model",
             [
                 ("Base", fmt(cfg.model.model_path)),
-                ("Text Encoder", fmt(cfg.model.text_encoder_path) or "[dim]Built-in[/]"),
+                (
+                    "Text Encoder",
+                    fmt(cfg.model.text_encoder_path) or "[dim]Built-in[/]",
+                ),
                 ("Training Mode", f"[bold green]{cfg.model.training_mode.upper()}[/]"),
-                ("Load Checkpoint", fmt(cfg.model.load_checkpoint) if cfg.model.load_checkpoint else "[dim]—[/]"),
+                (
+                    "Load Checkpoint",
+                    (
+                        fmt(cfg.model.load_checkpoint)
+                        if cfg.model.load_checkpoint
+                        else "[dim]—[/]"
+                    ),
+                ),
             ],
         ),
     ]
@@ -61,7 +71,12 @@ def print_config(config: LtxTrainerConfig) -> None:
     if hasattr(cfg.training_strategy, "with_audio"):
         strategy_items.append(("Audio", fmt(cfg.training_strategy.with_audio)))
     if hasattr(cfg.training_strategy, "first_frame_conditioning_p"):
-        strategy_items.append(("First Frame Cond P", str(cfg.training_strategy.first_frame_conditioning_p)))
+        strategy_items.append(
+            (
+                "First Frame Cond P",
+                str(cfg.training_strategy.first_frame_conditioning_p),
+            )
+        )
 
     sections.append(("🎯 Strategy", strategy_items))
 
@@ -84,24 +99,42 @@ def print_config(config: LtxTrainerConfig) -> None:
                 "🚀 Acceleration",
                 [
                     ("Mixed Precision", accel.mixed_precision_mode or "[dim]—[/]"),
-                    ("Quantization", str(accel.quantization) if accel.quantization else "[dim]—[/]"),
+                    (
+                        "Quantization",
+                        str(accel.quantization) if accel.quantization else "[dim]—[/]",
+                    ),
                     ("Text Encoder 8bit", fmt(accel.load_text_encoder_in_8bit)),
                 ],
             ),
             (
                 "🎥 Validation",
                 [
-                    ("Prompts", f"{len(val.prompts)} prompt(s)" if val.prompts else "[dim]—[/]"),
-                    ("Interval", f"Every {val.interval} steps" if val.interval else "[dim]Disabled[/]"),
-                    ("Video Dims", f"{val.video_dims[0]}x{val.video_dims[1]}, {val.video_dims[2]} frames"),
+                    (
+                        "Prompts",
+                        f"{len(val.prompts)} prompt(s)" if val.prompts else "[dim]—[/]",
+                    ),
+                    (
+                        "Interval",
+                        (
+                            f"Every {val.interval} steps"
+                            if val.interval
+                            else "[dim]Disabled[/]"
+                        ),
+                    ),
+                    (
+                        "Video Dims",
+                        f"{val.video_dims[0]}x{val.video_dims[1]}, {val.video_dims[2]} frames",
+                    ),
                     ("Frame Rate", f"{val.frame_rate} fps"),
                     ("Inference Steps", str(val.inference_steps)),
                     ("CFG Scale", str(val.guidance_scale)),
                     (
                         "STG",
-                        f"scale={val.stg_scale}; blocks={fmt(val.stg_blocks)}; mode={val.stg_mode}"
-                        if val.stg_scale > 0
-                        else "[dim]Disabled[/]",
+                        (
+                            f"scale={val.stg_scale}; blocks={fmt(val.stg_blocks)}; mode={val.stg_mode}"
+                            if val.stg_scale > 0
+                            else "[dim]Disabled[/]"
+                        ),
                     ),
                     ("Seed", str(val.seed)),
                 ],
@@ -120,12 +153,28 @@ def print_config(config: LtxTrainerConfig) -> None:
                 [
                     (
                         "Checkpoints",
-                        f"Every {cfg.checkpoints.interval} steps (keep {cfg.checkpoints.keep_last_n})"
-                        if cfg.checkpoints.interval
-                        else "[dim]Disabled[/]",
+                        (
+                            f"Every {cfg.checkpoints.interval} steps (keep {cfg.checkpoints.keep_last_n})"
+                            if cfg.checkpoints.interval
+                            else "[dim]Disabled[/]"
+                        ),
                     ),
-                    ("W&B", f"{cfg.wandb.project}" if cfg.wandb.enabled else "[dim]Disabled[/]"),
-                    ("HF Hub", cfg.hub.hub_model_id if cfg.hub.push_to_hub else "[dim]Disabled[/]"),
+                    (
+                        "W&B",
+                        (
+                            f"{cfg.wandb.project}"
+                            if cfg.wandb.enabled
+                            else "[dim]Disabled[/]"
+                        ),
+                    ),
+                    (
+                        "HF Hub",
+                        (
+                            cfg.hub.hub_model_id
+                            if cfg.hub.push_to_hub
+                            else "[dim]Disabled[/]"
+                        ),
+                    ),
                 ],
             ),
         ]

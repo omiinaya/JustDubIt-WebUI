@@ -19,11 +19,20 @@ class VideoConditionByLatentIndex(ConditioningItem):
         self.strength = strength
         self.latent_idx = latent_idx
 
-    def apply_to(self, latent_state: LatentState, latent_tools: LatentTools) -> LatentState:
+    def apply_to(
+        self, latent_state: LatentState, latent_tools: LatentTools
+    ) -> LatentState:
         cond_batch, cond_channels, _, cond_height, cond_width = self.latent.shape
-        tgt_batch, tgt_channels, tgt_frames, tgt_height, tgt_width = latent_tools.target_shape.to_torch_shape()
+        tgt_batch, tgt_channels, tgt_frames, tgt_height, tgt_width = (
+            latent_tools.target_shape.to_torch_shape()
+        )
 
-        if (cond_batch, cond_channels, cond_height, cond_width) != (tgt_batch, tgt_channels, tgt_height, tgt_width):
+        if (cond_batch, cond_channels, cond_height, cond_width) != (
+            tgt_batch,
+            tgt_channels,
+            tgt_height,
+            tgt_width,
+        ):
             raise ConditioningError(
                 f"Can't apply image conditioning item to latent with shape {latent_tools.target_shape}, expected "
                 f"shape is ({tgt_batch}, {tgt_channels}, {tgt_frames}, {tgt_height}, {tgt_width}). Make sure "

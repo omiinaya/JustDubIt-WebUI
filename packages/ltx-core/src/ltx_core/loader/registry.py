@@ -20,7 +20,9 @@ class Registry(Protocol):
     - clear: Clear all state dictionaries from the registry
     """
 
-    def add(self, paths: list[str], sd_ops: SDOps | None, state_dict: StateDict) -> None: ...
+    def add(
+        self, paths: list[str], sd_ops: SDOps | None, state_dict: StateDict
+    ) -> None: ...
 
     def pop(self, paths: list[str], sd_ops: SDOps | None) -> StateDict | None: ...
 
@@ -34,7 +36,9 @@ class DummyRegistry(Registry):
     Dummy registry that does not store state dictionaries.
     """
 
-    def add(self, paths: list[str], sd_ops: SDOps | None, state_dict: StateDict) -> None:
+    def add(
+        self, paths: list[str], sd_ops: SDOps | None, state_dict: StateDict
+    ) -> None:
         pass
 
     def pop(self, paths: list[str], sd_ops: SDOps | None) -> StateDict | None:
@@ -68,7 +72,9 @@ class StateDictRegistry(Registry):
         sd_id = self._generate_id(paths, sd_ops)
         with self._lock:
             if sd_id in self._state_dicts:
-                raise ValueError(f"State dict retrieved from {paths} with {sd_ops} already added, check with get first")
+                raise ValueError(
+                    f"State dict retrieved from {paths} with {sd_ops} already added, check with get first"
+                )
             self._state_dicts[sd_id] = state_dict
         return sd_id
 

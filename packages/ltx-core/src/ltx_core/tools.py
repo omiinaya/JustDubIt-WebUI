@@ -47,19 +47,33 @@ class LatentTools(Protocol):
         latent = self.patchifier.patchify(latent_state.latent)
         clean_latent = self.patchifier.patchify(latent_state.clean_latent)
         denoise_mask = self.patchifier.patchify(latent_state.denoise_mask)
-        return replace(latent_state, latent=latent, denoise_mask=denoise_mask, clean_latent=clean_latent)
+        return replace(
+            latent_state,
+            latent=latent,
+            denoise_mask=denoise_mask,
+            clean_latent=clean_latent,
+        )
 
     def unpatchify(self, latent_state: LatentState) -> LatentState:
         """
         Unpatchify the latent state.
         """
         latent_state = latent_state.clone()
-        latent = self.patchifier.unpatchify(latent_state.latent, output_shape=self.target_shape)
-        clean_latent = self.patchifier.unpatchify(latent_state.clean_latent, output_shape=self.target_shape)
+        latent = self.patchifier.unpatchify(
+            latent_state.latent, output_shape=self.target_shape
+        )
+        clean_latent = self.patchifier.unpatchify(
+            latent_state.clean_latent, output_shape=self.target_shape
+        )
         denoise_mask = self.patchifier.unpatchify(
             latent_state.denoise_mask, output_shape=self.target_shape.mask_shape()
         )
-        return replace(latent_state, latent=latent, denoise_mask=denoise_mask, clean_latent=clean_latent)
+        return replace(
+            latent_state,
+            latent=latent,
+            denoise_mask=denoise_mask,
+            clean_latent=clean_latent,
+        )
 
     def clear_conditioning(self, latent_state: LatentState) -> LatentState:
         """
@@ -74,7 +88,12 @@ class LatentTools(Protocol):
         denoise_mask = torch.ones_like(latent_state.denoise_mask)[:, :num_tokens]
         positions = latent_state.positions[:, :, :num_tokens]
 
-        return LatentState(latent=latent, denoise_mask=denoise_mask, positions=positions, clean_latent=clean_latent)
+        return LatentState(
+            latent=latent,
+            denoise_mask=denoise_mask,
+            positions=positions,
+            clean_latent=clean_latent,
+        )
 
 
 @dataclass(frozen=True)
@@ -96,9 +115,9 @@ class VideoLatentTools(LatentTools):
         initial_latent: torch.Tensor | None = None,
     ) -> LatentState:
         if initial_latent is not None:
-            assert initial_latent.shape == self.target_shape.to_torch_shape(), (
-                f"Latent shape {initial_latent.shape} does not match target shape {self.target_shape.to_torch_shape()}"
-            )
+            assert (
+                initial_latent.shape == self.target_shape.to_torch_shape()
+            ), f"Latent shape {initial_latent.shape} does not match target shape {self.target_shape.to_torch_shape()}"
         else:
             initial_latent = torch.zeros(
                 *self.target_shape.to_torch_shape(),
@@ -152,9 +171,9 @@ class AudioLatentTools(LatentTools):
         initial_latent: torch.Tensor | None = None,
     ) -> LatentState:
         if initial_latent is not None:
-            assert initial_latent.shape == self.target_shape.to_torch_shape(), (
-                f"Latent shape {initial_latent.shape} does not match target shape {self.target_shape.to_torch_shape()}"
-            )
+            assert (
+                initial_latent.shape == self.target_shape.to_torch_shape()
+            ), f"Latent shape {initial_latent.shape} does not match target shape {self.target_shape.to_torch_shape()}"
         else:
             initial_latent = torch.zeros(
                 *self.target_shape.to_torch_shape(),
@@ -177,6 +196,9 @@ class AudioLatentTools(LatentTools):
 
         return self.patchify(
             LatentState(
-                latent=initial_latent, denoise_mask=denoise_mask, positions=latent_coords, clean_latent=clean_latent
+                latent=initial_latent,
+                denoise_mask=denoise_mask,
+                positions=latent_coords,
+                clean_latent=clean_latent,
             )
         )

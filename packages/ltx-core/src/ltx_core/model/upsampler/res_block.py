@@ -13,7 +13,9 @@ class ResBlock(torch.nn.Module):
         dims (int): Dimensionality of the convolution (2 for Conv2d, 3 for Conv3d). Defaults to 3.
     """
 
-    def __init__(self, channels: int, mid_channels: Optional[int] = None, dims: int = 3):
+    def __init__(
+        self, channels: int, mid_channels: Optional[int] = None, dims: int = 3
+    ):
         super().__init__()
         if mid_channels is None:
             mid_channels = channels

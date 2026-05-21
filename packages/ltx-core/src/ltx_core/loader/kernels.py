@@ -51,7 +51,9 @@ def fused_add_round_kernel(
     # (exponent - EXPONENT_BIAS - MANTISSA_BITS) + 15
     # Simplifies to: fp16_exponent - MANTISSA_BITS + 15
     # See https://en.wikipedia.org/wiki/Unit_in_the_last_place
-    eps_exp = tl.maximum(0, tl.minimum(31, exponent - EXPONENT_BIAS - MANTISSA_BITS + 15))
+    eps_exp = tl.maximum(
+        0, tl.minimum(31, exponent - EXPONENT_BIAS - MANTISSA_BITS + 15)
+    )
 
     # Calculate epsilon in the target dtype
     eps_normal = tl.cast(tl.cast(eps_exp << 10, tl.int16), tl.float16, bitcast=True)
@@ -59,7 +61,11 @@ def fused_add_round_kernel(
     # Subnormal ULP: 2^(1 - EXPONENT_BIAS - MANTISSA_BITS) ->
     # fp16 exponent bits: (1 - EXPONENT_BIAS - MANTISSA_BITS) + 15 =
     # 16 - EXPONENT_BIAS - MANTISSA_BITS
-    eps_subnormal = tl.cast(tl.cast((16 - EXPONENT_BIAS - MANTISSA_BITS) << 10, tl.int16), tl.float16, bitcast=True)
+    eps_subnormal = tl.cast(
+        tl.cast((16 - EXPONENT_BIAS - MANTISSA_BITS) << 10, tl.int16),
+        tl.float16,
+        bitcast=True,
+    )
     eps = tl.where(exponent > 0, eps_normal, eps_subnormal)
 
     # Apply zero mask to epsilon

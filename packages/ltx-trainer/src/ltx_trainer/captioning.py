@@ -89,7 +89,11 @@ class MediaCaptioningModel(ABC):
     @staticmethod
     def _is_image_file(path: str | Path) -> bool:
         """Check if the file is an image based on extension."""
-        return str(path).lower().endswith((".png", ".jpg", ".jpeg", ".heic", ".heif", ".webp"))
+        return (
+            str(path)
+            .lower()
+            .endswith((".png", ".jpg", ".jpeg", ".heic", ".heif", ".webp"))
+        )
 
     @staticmethod
     def _is_video_file(path: str | Path) -> bool:
@@ -101,7 +105,16 @@ class MediaCaptioningModel(ABC):
         """Clean up the raw caption by removing common VLM patterns."""
         start = ["The", "This"]
         kind = ["video", "image", "scene", "animated sequence", "clip", "footage"]
-        act = ["displays", "shows", "features", "depicts", "presents", "showcases", "captures", "contains"]
+        act = [
+            "displays",
+            "shows",
+            "features",
+            "depicts",
+            "presents",
+            "showcases",
+            "captures",
+            "contains",
+        ]
 
         for x, y, z in itertools.product(start, kind, act):
             caption = caption.replace(f"{x} {y} {z} ", "", 1)
@@ -148,7 +161,9 @@ class QwenOmniCaptioner(MediaCaptioningModel):
             use_8bit: Whether to use 8-bit quantization for reduced memory usage
             instruction: Custom instruction prompt. If None, uses the default instruction
         """
-        self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
+        self.device = torch.device(
+            device or ("cuda" if torch.cuda.is_available() else "cpu")
+        )
         self.instruction = instruction
         self._load_model(use_8bit=use_8bit)
 
@@ -185,7 +200,11 @@ class QwenOmniCaptioner(MediaCaptioningModel):
         if self.instruction is not None:
             instruction = self.instruction
         else:
-            instruction = DEFAULT_CAPTION_INSTRUCTION if use_audio else VIDEO_ONLY_CAPTION_INSTRUCTION
+            instruction = (
+                DEFAULT_CAPTION_INSTRUCTION
+                if use_audio
+                else VIDEO_ONLY_CAPTION_INSTRUCTION
+            )
 
         # Build the user content based on media type
         # Based on HuggingFace docs: https://huggingface.co/docs/transformers/en/model_doc/qwen2_5_omni
@@ -269,7 +288,9 @@ class QwenOmniCaptioner(MediaCaptioningModel):
             Qwen2_5OmniThinkerForConditionalGeneration,
         )
 
-        quantization_config = BitsAndBytesConfig(load_in_8bit=True) if use_8bit else None
+        quantization_config = (
+            BitsAndBytesConfig(load_in_8bit=True) if use_8bit else None
+        )
 
         # Use Thinker-only model for text generation (saves memory by not loading Talker)
         self.model = Qwen2_5OmniThinkerForConditionalGeneration.from_pretrained(
@@ -342,7 +363,11 @@ class GeminiFlashCaptioner(MediaCaptioningModel):
         if self.instruction is not None:
             instruction = self.instruction
         else:
-            instruction = DEFAULT_CAPTION_INSTRUCTION if use_audio else VIDEO_ONLY_CAPTION_INSTRUCTION
+            instruction = (
+                DEFAULT_CAPTION_INSTRUCTION
+                if use_audio
+                else VIDEO_ONLY_CAPTION_INSTRUCTION
+            )
 
         # Upload the file to Gemini
         uploaded_file = self._genai.upload_file(path)
@@ -380,7 +405,11 @@ class GeminiFlashCaptioner(MediaCaptioningModel):
 
         # Get API key from argument or environment
         # GEMINI_API_KEY is the recommended variable, GOOGLE_API_KEY also works
-        resolved_api_key = api_key or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        resolved_api_key = (
+            api_key
+            or os.environ.get("GEMINI_API_KEY")
+            or os.environ.get("GOOGLE_API_KEY")
+        )
 
         if not resolved_api_key:
             raise ValueError(
@@ -403,12 +432,16 @@ def example() -> None:
     import sys  # noqa: PLC0415
 
     if len(sys.argv) < 2:
-        print(f"Usage: python {sys.argv[0]} <video_path> [captioner_type]")  # noqa: T201
+        print(
+            f"Usage: python {sys.argv[0]} <video_path> [captioner_type]"
+        )  # noqa: T201
         print("  captioner_type: qwen_omni (default) or gemini_flash")  # noqa: T201
         sys.exit(1)
 
     video_path = sys.argv[1]
-    captioner_type = CaptionerType(sys.argv[2]) if len(sys.argv) > 2 else CaptionerType.QWEN_OMNI
+    captioner_type = (
+        CaptionerType(sys.argv[2]) if len(sys.argv) > 2 else CaptionerType.QWEN_OMNI
+    )
 
     print(f"Using {captioner_type.value} captioner:")  # noqa: T201
     captioner = create_captioner(captioner_type)

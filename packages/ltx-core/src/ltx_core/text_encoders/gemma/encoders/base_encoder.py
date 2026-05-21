@@ -4,10 +4,16 @@ from pathlib import Path
 import torch
 from einops import rearrange
 from PIL import Image as PILImage
-from transformers import AutoImageProcessor, Gemma3ForConditionalGeneration, Gemma3Processor
+from transformers import (
+    AutoImageProcessor,
+    Gemma3ForConditionalGeneration,
+    Gemma3Processor,
+)
 
 from ltx_core.loader.module_ops import ModuleOps
-from ltx_core.text_encoders.gemma.feature_extractor import GemmaFeaturesExtractorProjLinear
+from ltx_core.text_encoders.gemma.feature_extractor import (
+    GemmaFeaturesExtractorProjLinear,
+)
 from ltx_core.text_encoders.gemma.tokenizer import LTXVGemmaTokenizer
 
 
@@ -42,7 +48,10 @@ class GemmaTextEncoderModelBase(torch.nn.Module):
         self.feature_extractor_linear = feature_extractor_linear.to(dtype=dtype)
 
     def _run_feature_extractor(
-        self, hidden_states: torch.Tensor, attention_mask: torch.Tensor, padding_side: str = "right"
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor,
+        padding_side: str = "right",
     ) -> torch.Tensor:
         encoded_text_features = torch.stack(hidden_states, dim=-1)
         encoded_text_features_dtype = encoded_text_features.dtype
@@ -52,14 +61,20 @@ class GemmaTextEncoderModelBase(torch.nn.Module):
             encoded_text_features, sequence_lengths, padding_side=padding_side
         )
 
-        return self.feature_extractor_linear(normed_concated_encoded_text_features.to(encoded_text_features_dtype))
+        return self.feature_extractor_linear(
+            normed_concated_encoded_text_features.to(encoded_text_features_dtype)
+        )
 
-    def _convert_to_additive_mask(self, attention_mask: torch.Tensor, dtype: torch.dtype) -> torch.Tensor:
+    def _convert_to_additive_mask(
+        self, attention_mask: torch.Tensor, dtype: torch.dtype
+    ) -> torch.Tensor:
         return (attention_mask - 1).to(dtype).reshape(
             (attention_mask.shape[0], 1, -1, attention_mask.shape[-1])
         ) * torch.finfo(dtype).max
 
-    def _preprocess_text(self, text: str, padding_side: str = "left") -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+    def _preprocess_text(
+        self, text: str, padding_side: str = "left"
+    ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
         """
         Encode a given string into feature tensors suitable for downstream tasks.
 
@@ -70,19 +85,33 @@ class GemmaTextEncoderModelBase(torch.nn.Module):
             tuple[torch.Tensor, dict[str, torch.Tensor]]: Encoded features and a dictionary with attention mask.
         """
         token_pairs = self.tokenizer.tokenize_with_weights(text)["gemma"]
-        input_ids = torch.tensor([[t[0] for t in token_pairs]], device=self.model.device)
-        attention_mask = torch.tensor([[w[1] for w in token_pairs]], device=self.model.device)
-        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True)
+        input_ids = torch.tensor(
+            [[t[0] for t in token_pairs]], device=self.model.device
+        )
+        attention_mask = torch.tensor(
+            [[w[1] for w in token_pairs]], device=self.model.device
+        )
+        outputs = self.model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            output_hidden_states=True,
+        )
         projected = self._run_feature_extractor(
-            hidden_states=outputs.hidden_states, attention_mask=attention_mask, padding_side=padding_side
+            hidden_states=outputs.hidden_states,
+            attention_mask=attention_mask,
+            padding_side=padding_side,
         )
         return projected, attention_mask
 
     def _init_image_processor(self) -> None:
-        img_processor = AutoImageProcessor.from_pretrained(self._gemma_root, local_files_only=True)
+        img_processor = AutoImageProcessor.from_pretrained(
+            self._gemma_root, local_files_only=True
+        )
         if not self.tokenizer:
             raise ValueError("Tokenizer is not loaded, cannot load image processor")
-        self.processor = Gemma3Processor(image_processor=img_processor, tokenizer=self.tokenizer.tokenizer)
+        self.processor = Gemma3Processor(
+            image_processor=img_processor, tokenizer=self.tokenizer.tokenizer
+        )
 
     @torch.inference_mode()
     def enhance_t2v(
@@ -100,9 +129,13 @@ class GemmaTextEncoderModelBase(torch.nn.Module):
             {"role": "user", "content": f"user prompt: {prompt}"},
         ]
 
-        text = self.processor.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        text = self.processor.tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
 
-        model_inputs = self.processor.tokenizer(text, return_tensors="pt").to(self.model.device)
+        model_inputs = self.processor.tokenizer(text, return_tensors="pt").to(
+            self.model.device
+        )
 
         outputs = self.model.generate(
             **model_inputs,
@@ -110,7 +143,9 @@ class GemmaTextEncoderModelBase(torch.nn.Module):
             do_sample=False,
         )
         generated_ids = outputs[0][len(model_inputs.input_ids[0]) :]
-        enhanced_prompt = self.processor.tokenizer.decode(generated_ids, skip_special_tokens=True)
+        enhanced_prompt = self.processor.tokenizer.decode(
+            generated_ids, skip_special_tokens=True
+        )
 
         return enhanced_prompt
 
@@ -137,7 +172,9 @@ class GemmaTextEncoderModelBase(torch.nn.Module):
             },
         ]
 
-        text = self.processor.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        text = self.processor.tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
 
         model_inputs = self.processor(
             text=text,
@@ -151,7 +188,9 @@ class GemmaTextEncoderModelBase(torch.nn.Module):
             do_sample=False,
         )
         generated_ids = outputs[0][len(model_inputs.input_ids[0]) :]
-        enhanced_prompt = self.processor.tokenizer.decode(generated_ids, skip_special_tokens=True)
+        enhanced_prompt = self.processor.tokenizer.decode(
+            generated_ids, skip_special_tokens=True
+        )
 
         return enhanced_prompt
 
@@ -163,7 +202,9 @@ class GemmaTextEncoderModelBase(torch.nn.Module):
     def default_gemma_t2v_system_prompt(self) -> str:
         return _load_system_prompt("gemma_t2v_system_prompt.txt")
 
-    def forward(self, text: str, padding_side: str = "left") -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self, text: str, padding_side: str = "left"
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         raise NotImplementedError("This method is not implemented for the base class")
 
 
@@ -213,7 +254,9 @@ def _norm_and_concat_padded_batch(
 
     # Compute masked min/max: [B, 1, 1, L]
     x_min = encoded_text.masked_fill(~mask, float("inf")).amin(dim=(1, 2), keepdim=True)
-    x_max = encoded_text.masked_fill(~mask, float("-inf")).amax(dim=(1, 2), keepdim=True)
+    x_max = encoded_text.masked_fill(~mask, float("-inf")).amax(
+        dim=(1, 2), keepdim=True
+    )
     range_ = x_max - x_min
 
     # Normalize only the valid tokens
@@ -245,7 +288,9 @@ def _find_matching_dir(root_path: str, pattern: str) -> str:
 
     matches = list(Path(root_path).rglob(pattern))
     if not matches:
-        raise FileNotFoundError(f"No files matching pattern '{pattern}' found under {root_path}")
+        raise FileNotFoundError(
+            f"No files matching pattern '{pattern}' found under {root_path}"
+        )
     return str(matches[0].parent)
 
 
@@ -267,12 +312,14 @@ def module_ops_from_gemma_root(gemma_root: str) -> tuple[ModuleOps, ...]:
 
     gemma_load_ops = ModuleOps(
         "GemmaLoad",
-        matcher=lambda module: isinstance(module, GemmaTextEncoderModelBase) and module.model is None,
+        matcher=lambda module: isinstance(module, GemmaTextEncoderModelBase)
+        and module.model is None,
         mutator=load_gemma,
     )
     tokenizer_load_ops = ModuleOps(
         "TokenizerLoad",
-        matcher=lambda module: isinstance(module, GemmaTextEncoderModelBase) and module.tokenizer is None,
+        matcher=lambda module: isinstance(module, GemmaTextEncoderModelBase)
+        and module.tokenizer is None,
         mutator=load_tokenizer,
     )
     return (gemma_load_ops, tokenizer_load_ops)

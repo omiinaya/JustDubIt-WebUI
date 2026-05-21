@@ -97,7 +97,10 @@ class DistilledPipeline:
         stage_1_sigmas = torch.Tensor(DISTILLED_SIGMA_VALUES).to(self.device)
 
         def denoising_loop(
-            sigmas: torch.Tensor, video_state: LatentState, audio_state: LatentState, stepper: DiffusionStepProtocol
+            sigmas: torch.Tensor,
+            video_state: LatentState,
+            audio_state: LatentState,
+            stepper: DiffusionStepProtocol,
         ) -> tuple[LatentState, LatentState]:
             return euler_denoising_loop(
                 sigmas=sigmas,
@@ -111,7 +114,9 @@ class DistilledPipeline:
                 ),
             )
 
-        stage_1_output_shape = VideoPixelShape(batch=1, frames=num_frames, width=width, height=height, fps=frame_rate)
+        stage_1_output_shape = VideoPixelShape(
+            batch=1, frames=num_frames, width=width, height=height, fps=frame_rate
+        )
         stage_1_conditionings = image_conditionings_by_replacing_latent(
             images=images,
             height=stage_1_output_shape.height,
@@ -135,7 +140,9 @@ class DistilledPipeline:
 
         # Stage 2: Upsample and refine the video at higher resolution with distilled LORA.
         upscaled_video_latent = utils.upsample_video(
-            latent=video_state.latent[:1], video_encoder=video_encoder, upsampler=self.model_ledger.spatial_upsampler()
+            latent=video_state.latent[:1],
+            video_encoder=video_encoder,
+            upsampler=self.model_ledger.spatial_upsampler(),
         )
 
         torch.cuda.synchronize()
@@ -143,7 +150,11 @@ class DistilledPipeline:
 
         stage_2_sigmas = torch.Tensor(STAGE_2_DISTILLED_SIGMA_VALUES).to(self.device)
         stage_2_output_shape = VideoPixelShape(
-            batch=1, frames=num_frames, width=width * 2, height=height * 2, fps=frame_rate
+            batch=1,
+            frames=num_frames,
+            width=width * 2,
+            height=height * 2,
+            fps=frame_rate,
         )
         stage_2_conditionings = image_conditionings_by_replacing_latent(
             images=images,
@@ -173,15 +184,21 @@ class DistilledPipeline:
         del video_encoder
         utils.cleanup_memory()
 
-        decoded_video = vae_decode_video(video_state, self.model_ledger.video_decoder(), tiling_config)
-        decoded_audio = vae_decode_audio(audio_state, self.model_ledger.audio_decoder(), self.model_ledger.vocoder())
+        decoded_video = vae_decode_video(
+            video_state, self.model_ledger.video_decoder(), tiling_config
+        )
+        decoded_audio = vae_decode_audio(
+            audio_state, self.model_ledger.audio_decoder(), self.model_ledger.vocoder()
+        )
         return decoded_video, decoded_audio
 
 
 def main() -> None:
     parser = utils.default_2_stage_distilled_arg_parser()
     args = parser.parse_args()
-    lora_strengths = (args.lora_strength + [DEFAULT_LORA_STRENGTH] * len(args.lora))[: len(args.lora)]
+    lora_strengths = (args.lora_strength + [DEFAULT_LORA_STRENGTH] * len(args.lora))[
+        : len(args.lora)
+    ]
     loras = [
         LoraPathStrengthAndSDOps(lora, strength, LTXV_LORA_COMFY_RENAMING_MAP)
         for lora, strength in zip(args.lora, lora_strengths, strict=True)

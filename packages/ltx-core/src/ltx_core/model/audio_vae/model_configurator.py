@@ -14,8 +14,12 @@ class VocoderConfigurator(ModelConfigurator[Vocoder]):
         return Vocoder(
             resblock_kernel_sizes=config.get("resblock_kernel_sizes", [3, 7, 11]),
             upsample_rates=config.get("upsample_rates", [6, 5, 2, 2, 2]),
-            upsample_kernel_sizes=config.get("upsample_kernel_sizes", [16, 15, 8, 4, 4]),
-            resblock_dilation_sizes=config.get("resblock_dilation_sizes", [[1, 3, 5], [1, 3, 5], [1, 3, 5]]),
+            upsample_kernel_sizes=config.get(
+                "upsample_kernel_sizes", [16, 15, 8, 4, 4]
+            ),
+            resblock_dilation_sizes=config.get(
+                "resblock_dilation_sizes", [[1, 3, 5], [1, 3, 5], [1, 3, 5]]
+            ),
             upsample_initial_channel=config.get("upsample_initial_channel", 1024),
             stereo=config.get("stereo", True),
             resblock=config.get("resblock", "1"),
@@ -24,7 +28,9 @@ class VocoderConfigurator(ModelConfigurator[Vocoder]):
 
 
 VOCODER_COMFY_KEYS_FILTER = (
-    SDOps("VOCODER_COMFY_KEYS_FILTER").with_matching(prefix="vocoder.").with_replacement("vocoder.", "")
+    SDOps("VOCODER_COMFY_KEYS_FILTER")
+    .with_matching(prefix="vocoder.")
+    .with_replacement("vocoder.", "")
 )
 
 
@@ -43,7 +49,11 @@ class VAEDecoderConfigurator(ModelConfigurator[Decoder]):
         sample_rate = model_params.get("sampling_rate", 16000)
         mel_hop_length = stft_cfg.get("hop_length", 160)
         is_causal = stft_cfg.get("causal", True)
-        mel_bins = ddconfig.get("mel_bins") or mel_cfg.get("n_mel_channels") or variables_cfg.get("mel_bins")
+        mel_bins = (
+            ddconfig.get("mel_bins")
+            or mel_cfg.get("n_mel_channels")
+            or variables_cfg.get("mel_bins")
+        )
 
         return Decoder(
             ch=ddconfig.get("ch", 128),
@@ -80,7 +90,11 @@ class VAEEncoderConfigurator(ModelConfigurator[Encoder]):
         mel_hop_length = stft_cfg.get("hop_length", 160)
         n_fft = stft_cfg.get("filter_length", 1024)
         is_causal = stft_cfg.get("causal", True)
-        mel_bins = ddconfig.get("mel_bins") or mel_cfg.get("n_mel_channels") or variables_cfg.get("mel_bins")
+        mel_bins = (
+            ddconfig.get("mel_bins")
+            or mel_cfg.get("n_mel_channels")
+            or variables_cfg.get("mel_bins")
+        )
 
         return Encoder(
             ch=ddconfig.get("ch", 128),

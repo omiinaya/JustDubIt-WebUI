@@ -3,7 +3,11 @@ from dataclasses import dataclass, replace
 import torch
 
 from ltx_core.guidance.perturbations import BatchedPerturbationConfig, PerturbationType
-from ltx_core.model.transformer.attention import Attention, AttentionCallable, AttentionFunction
+from ltx_core.model.transformer.attention import (
+    Attention,
+    AttentionCallable,
+    AttentionFunction,
+)
 from ltx_core.model.transformer.feed_forward import FeedForward
 from ltx_core.model.transformer.rope import LTXRopeType
 from ltx_core.model.transformer.transformer_args import TransformerArgs
@@ -26,7 +30,9 @@ class BasicAVTransformerBlock(torch.nn.Module):
         audio: TransformerConfig | None = None,
         rope_type: LTXRopeType = LTXRopeType.INTERLEAVED,
         norm_eps: float = 1e-6,
-        attention_function: AttentionFunction | AttentionCallable = AttentionFunction.DEFAULT,
+        attention_function: (
+            AttentionFunction | AttentionCallable
+        ) = AttentionFunction.DEFAULT,
     ):
         super().__init__()
 
@@ -98,8 +104,12 @@ class BasicAVTransformerBlock(torch.nn.Module):
                 attention_function=attention_function,
             )
 
-            self.scale_shift_table_a2v_ca_audio = torch.nn.Parameter(torch.empty(5, audio.dim))
-            self.scale_shift_table_a2v_ca_video = torch.nn.Parameter(torch.empty(5, video.dim))
+            self.scale_shift_table_a2v_ca_audio = torch.nn.Parameter(
+                torch.empty(5, audio.dim)
+            )
+            self.scale_shift_table_a2v_ca_video = torch.nn.Parameter(
+                torch.empty(5, video.dim)
+            )
 
         self.norm_eps = norm_eps
 
@@ -161,27 +171,61 @@ class BasicAVTransformerBlock(torch.nn.Module):
         run_v2a = run_ax and (video is not None and video.enabled and vx.numel() > 0)
 
         if run_vx:
-            vshift_msa, vscale_msa, vgate_msa, vshift_mlp, vscale_mlp, vgate_mlp = self.get_ada_values(
-                self.scale_shift_table, vx.shape[0], video.timesteps
+            vshift_msa, vscale_msa, vgate_msa, vshift_mlp, vscale_mlp, vgate_mlp = (
+                self.get_ada_values(
+                    self.scale_shift_table, vx.shape[0], video.timesteps
+                )
             )
-            if not perturbations.all_in_batch(PerturbationType.SKIP_VIDEO_SELF_ATTN, self.idx):
-                norm_vx = rms_norm(vx, eps=self.norm_eps) * (1 + vscale_msa) + vshift_msa
-                v_mask = perturbations.mask_like(PerturbationType.SKIP_VIDEO_SELF_ATTN, self.idx, vx)
-                vx = vx + self.attn1(norm_vx, pe=video.positional_embeddings) * vgate_msa * v_mask
+            if not perturbations.all_in_batch(
+                PerturbationType.SKIP_VIDEO_SELF_ATTN, self.idx
+            ):
+                norm_vx = (
+                    rms_norm(vx, eps=self.norm_eps) * (1 + vscale_msa) + vshift_msa
+                )
+                v_mask = perturbations.mask_like(
+                    PerturbationType.SKIP_VIDEO_SELF_ATTN, self.idx, vx
+                )
+                vx = (
+                    vx
+                    + self.attn1(norm_vx, pe=video.positional_embeddings)
+                    * vgate_msa
+                    * v_mask
+                )
 
-            vx = vx + self.attn2(rms_norm(vx, eps=self.norm_eps), context=video.context, mask=video.context_mask)
+            vx = vx + self.attn2(
+                rms_norm(vx, eps=self.norm_eps),
+                context=video.context,
+                mask=video.context_mask,
+            )
 
         if run_ax:
-            ashift_msa, ascale_msa, agate_msa, ashift_mlp, ascale_mlp, agate_mlp = self.get_ada_values(
-                self.audio_scale_shift_table, ax.shape[0], audio.timesteps
+            ashift_msa, ascale_msa, agate_msa, ashift_mlp, ascale_mlp, agate_mlp = (
+                self.get_ada_values(
+                    self.audio_scale_shift_table, ax.shape[0], audio.timesteps
+                )
             )
 
-            if not perturbations.all_in_batch(PerturbationType.SKIP_AUDIO_SELF_ATTN, self.idx):
-                norm_ax = rms_norm(ax, eps=self.norm_eps) * (1 + ascale_msa) + ashift_msa
-                a_mask = perturbations.mask_like(PerturbationType.SKIP_AUDIO_SELF_ATTN, self.idx, ax)
-                ax = ax + self.audio_attn1(norm_ax, pe=audio.positional_embeddings) * agate_msa * a_mask
+            if not perturbations.all_in_batch(
+                PerturbationType.SKIP_AUDIO_SELF_ATTN, self.idx
+            ):
+                norm_ax = (
+                    rms_norm(ax, eps=self.norm_eps) * (1 + ascale_msa) + ashift_msa
+                )
+                a_mask = perturbations.mask_like(
+                    PerturbationType.SKIP_AUDIO_SELF_ATTN, self.idx, ax
+                )
+                ax = (
+                    ax
+                    + self.audio_attn1(norm_ax, pe=audio.positional_embeddings)
+                    * agate_msa
+                    * a_mask
+                )
 
-            ax = ax + self.audio_attn2(rms_norm(ax, eps=self.norm_eps), context=audio.context, mask=audio.context_mask)
+            ax = ax + self.audio_attn2(
+                rms_norm(ax, eps=self.norm_eps),
+                context=audio.context,
+                mask=audio.context_mask,
+            )
 
         # Audio - Video cross attention.
         if run_a2v or run_v2a:
@@ -215,9 +259,17 @@ class BasicAVTransformerBlock(torch.nn.Module):
             )
 
             if run_a2v:
-                vx_scaled = vx_norm3 * (1 + scale_ca_video_hidden_states_a2v) + shift_ca_video_hidden_states_a2v
-                ax_scaled = ax_norm3 * (1 + scale_ca_audio_hidden_states_a2v) + shift_ca_audio_hidden_states_a2v
-                a2v_mask = perturbations.mask_like(PerturbationType.SKIP_A2V_CROSS_ATTN, self.idx, vx)
+                vx_scaled = (
+                    vx_norm3 * (1 + scale_ca_video_hidden_states_a2v)
+                    + shift_ca_video_hidden_states_a2v
+                )
+                ax_scaled = (
+                    ax_norm3 * (1 + scale_ca_audio_hidden_states_a2v)
+                    + shift_ca_audio_hidden_states_a2v
+                )
+                a2v_mask = perturbations.mask_like(
+                    PerturbationType.SKIP_A2V_CROSS_ATTN, self.idx, vx
+                )
                 vx = vx + (
                     self.audio_to_video_attn(
                         vx_scaled,
@@ -231,9 +283,17 @@ class BasicAVTransformerBlock(torch.nn.Module):
                 )
 
             if run_v2a:
-                ax_scaled = ax_norm3 * (1 + scale_ca_audio_hidden_states_v2a) + shift_ca_audio_hidden_states_v2a
-                vx_scaled = vx_norm3 * (1 + scale_ca_video_hidden_states_v2a) + shift_ca_video_hidden_states_v2a
-                v2a_mask = perturbations.mask_like(PerturbationType.SKIP_V2A_CROSS_ATTN, self.idx, ax)
+                ax_scaled = (
+                    ax_norm3 * (1 + scale_ca_audio_hidden_states_v2a)
+                    + shift_ca_audio_hidden_states_v2a
+                )
+                vx_scaled = (
+                    vx_norm3 * (1 + scale_ca_video_hidden_states_v2a)
+                    + shift_ca_video_hidden_states_v2a
+                )
+                v2a_mask = perturbations.mask_like(
+                    PerturbationType.SKIP_V2A_CROSS_ATTN, self.idx, ax
+                )
                 ax = ax + (
                     self.video_to_audio_attn(
                         ax_scaled,
@@ -254,4 +314,6 @@ class BasicAVTransformerBlock(torch.nn.Module):
             ax_scaled = rms_norm(ax, eps=self.norm_eps) * (1 + ascale_mlp) + ashift_mlp
             ax = ax + self.audio_ff(ax_scaled) * agate_mlp
 
-        return replace(video, x=vx) if video is not None else None, replace(audio, x=ax) if audio is not None else None
+        return replace(video, x=vx) if video is not None else None, (
+            replace(audio, x=ax) if audio is not None else None
+        )

@@ -44,7 +44,9 @@ from scenedetect.scene_manager import save_images as save_scene_images
 from scenedetect.stats_manager import StatsManager
 from scenedetect.video_splitter import split_video_ffmpeg
 
-app = typer.Typer(no_args_is_help=True, help="Split video into scenes using PySceneDetect.")
+app = typer.Typer(
+    no_args_is_help=True, help="Split video into scenes using PySceneDetect."
+)
 
 
 class DetectorType(str, Enum):
@@ -53,7 +55,9 @@ class DetectorType(str, Enum):
     CONTENT = "content"  # Detects fast cuts using HSV color space
     ADAPTIVE = "adaptive"  # Detects fast two-phase cuts
     THRESHOLD = "threshold"  # Detects fast cuts/slow fades in from and out to a given threshold level
-    HISTOGRAM = "histogram"  # Detects based on YUV histogram differences in adjacent frames
+    HISTOGRAM = (
+        "histogram"  # Detects based on YUV histogram differences in adjacent frames
+    )
 
 
 def create_detector(
@@ -259,7 +263,8 @@ def detect_and_split_scenes(  # noqa: PLR0913
         scenes = [
             (start, end)
             for start, end in scenes
-            if (end.get_frames() - start.get_frames()) >= filter_shorter_than_tc.get_frames()
+            if (end.get_frames() - start.get_frames())
+            >= filter_shorter_than_tc.get_frames()
         ]
         if len(scenes) < original_count:
             typer.echo(
@@ -270,7 +275,9 @@ def detect_and_split_scenes(  # noqa: PLR0913
 
     # Apply max scenes limit if specified
     if max_scenes and len(scenes) > max_scenes:
-        typer.echo(f"Dropping last {len(scenes) - max_scenes} scenes to meet max_scenes ({max_scenes}) limit")
+        typer.echo(
+            f"Dropping last {len(scenes) - max_scenes} scenes to meet max_scenes ({max_scenes}) limit"
+        )
         scenes = scenes[:max_scenes]
 
     # Print scene information

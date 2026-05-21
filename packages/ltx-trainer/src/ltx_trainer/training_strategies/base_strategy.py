@@ -60,10 +60,14 @@ class ModelInputs:
 
     # Metadata needed for loss computation in some strategies
     ref_video_seq_len: int | None = None  # For IC-LoRA: length of reference sequence
-    ref_audio_seq_len: int | None = None  # For IC-LoRA: length of reference audio sequence
+    ref_audio_seq_len: int | None = (
+        None  # For IC-LoRA: length of reference audio sequence
+    )
 
     # Mask information
-    foreground_masks: Tensor | None = None  # Boolean or float mask: True/1.0 = foreground, False/0.0 = background
+    foreground_masks: Tensor | None = (
+        None  # Boolean or float mask: True/1.0 = foreground, False/0.0 = background
+    )
 
 
 class TrainingStrategy(ABC):
@@ -229,7 +233,9 @@ class TrainingStrategy(ABC):
         return latent_coords.to(dtype)
 
     @staticmethod
-    def _create_per_token_timesteps(conditioning_mask: Tensor, sampled_sigma: Tensor) -> Tensor:
+    def _create_per_token_timesteps(
+        conditioning_mask: Tensor, sampled_sigma: Tensor
+    ) -> Tensor:
         """Create per-token timesteps based on conditioning mask.
 
         Args:
@@ -244,7 +250,9 @@ class TrainingStrategy(ABC):
         expanded_sigma = sampled_sigma.view(-1, 1).expand_as(conditioning_mask)
 
         # Conditioning tokens get 0, target tokens get the sampled sigma
-        return torch.where(conditioning_mask, torch.zeros_like(expanded_sigma), expanded_sigma)
+        return torch.where(
+            conditioning_mask, torch.zeros_like(expanded_sigma), expanded_sigma
+        )
 
     @staticmethod
     def _create_first_frame_conditioning_mask(
@@ -268,9 +276,14 @@ class TrainingStrategy(ABC):
         Returns:
             Boolean mask where True indicates first frame tokens (if conditioning is enabled)
         """
-        conditioning_mask = torch.zeros(batch_size, sequence_length, dtype=torch.bool, device=device)
+        conditioning_mask = torch.zeros(
+            batch_size, sequence_length, dtype=torch.bool, device=device
+        )
 
-        if first_frame_conditioning_p > 0 and random.random() < first_frame_conditioning_p:
+        if (
+            first_frame_conditioning_p > 0
+            and random.random() < first_frame_conditioning_p
+        ):
             first_frame_end_idx = height * width
             if first_frame_end_idx < sequence_length:
                 conditioning_mask[:, :first_frame_end_idx] = True

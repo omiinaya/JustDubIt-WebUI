@@ -27,7 +27,9 @@ class LTXVGemmaTokenizer:
 
         self.max_length = max_length
 
-    def tokenize_with_weights(self, text: str, return_word_ids: bool = False) -> dict[str, list[tuple[int, int]]]:
+    def tokenize_with_weights(
+        self, text: str, return_word_ids: bool = False
+    ) -> dict[str, list[tuple[int, int]]]:
         """
         Tokenize the given text and return token IDs and attention weights.
 
@@ -58,7 +60,10 @@ class LTXVGemmaTokenizer:
         input_ids = encoded.input_ids
         attention_mask = encoded.attention_mask
         tuples = [
-            (token_id, attn, i) for i, (token_id, attn) in enumerate(zip(input_ids[0], attention_mask[0], strict=True))
+            (token_id, attn, i)
+            for i, (token_id, attn) in enumerate(
+                zip(input_ids[0], attention_mask[0], strict=True)
+            )
         ]
         out = {"gemma": tuples}
 

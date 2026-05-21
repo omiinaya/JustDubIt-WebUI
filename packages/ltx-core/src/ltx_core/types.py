@@ -44,7 +44,9 @@ class VideoLatentShape(NamedTuple):
     width: int
 
     def to_torch_shape(self) -> torch.Size:
-        return torch.Size([self.batch, self.channels, self.frames, self.height, self.width])
+        return torch.Size(
+            [self.batch, self.channels, self.frames, self.height, self.width]
+        )
 
     @staticmethod
     def from_torch_shape(shape: torch.Size) -> "VideoLatentShape":
@@ -77,7 +79,9 @@ class VideoLatentShape(NamedTuple):
             width=width,
         )
 
-    def upscale(self, scale_factors: SpatioTemporalScaleFactors = (8, 32, 32)) -> "VideoLatentShape":
+    def upscale(
+        self, scale_factors: SpatioTemporalScaleFactors = (8, 32, 32)
+    ) -> "VideoLatentShape":
         return self._replace(
             channels=3,
             frames=(self.frames - 1) * scale_factors.time + 1,
@@ -123,7 +127,11 @@ class AudioLatentShape(NamedTuple):
         hop_length: int = 160,
         audio_latent_downsample_factor: int = 4,
     ) -> "AudioLatentShape":
-        latents_per_second = float(sample_rate) / float(hop_length) / float(audio_latent_downsample_factor)
+        latents_per_second = (
+            float(sample_rate)
+            / float(hop_length)
+            / float(audio_latent_downsample_factor)
+        )
 
         return AudioLatentShape(
             batch=batch,

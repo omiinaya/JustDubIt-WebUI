@@ -72,7 +72,9 @@ class STGGuider(GuiderProtocol):
 
     scale: float
 
-    def delta(self, pos_denoised: torch.Tensor, perturbed_denoised: torch.Tensor) -> torch.Tensor:
+    def delta(
+        self, pos_denoised: torch.Tensor, perturbed_denoised: torch.Tensor
+    ) -> torch.Tensor:
         return self.scale * (pos_denoised - perturbed_denoised)
 
     def enabled(self) -> bool:
@@ -205,7 +207,9 @@ class LegacyStatefulAPGGuider(GuiderProtocol):
         return not math.isclose(self.scale, 0.0)
 
 
-def projection_coef(to_project: torch.Tensor, project_onto: torch.Tensor) -> torch.Tensor:
+def projection_coef(
+    to_project: torch.Tensor, project_onto: torch.Tensor
+) -> torch.Tensor:
     batch_size = to_project.shape[0]
     positive_flat = to_project.reshape(batch_size, -1)
     negative_flat = project_onto.reshape(batch_size, -1)

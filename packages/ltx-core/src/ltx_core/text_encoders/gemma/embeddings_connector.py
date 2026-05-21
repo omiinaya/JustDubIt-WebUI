@@ -107,7 +107,9 @@ class Embeddings1DConnector(torch.nn.Module):
         self.causal_temporal_positioning = causal_temporal_positioning
         self.positional_embedding_theta = positional_embedding_theta
         self.positional_embedding_max_pos = (
-            positional_embedding_max_pos if positional_embedding_max_pos is not None else [1]
+            positional_embedding_max_pos
+            if positional_embedding_max_pos is not None
+            else [1]
         )
         self.rope_type = rope_type
         self.double_precision_rope = double_precision_rope
@@ -126,7 +128,11 @@ class Embeddings1DConnector(torch.nn.Module):
         self.num_learnable_registers = num_learnable_registers
         if self.num_learnable_registers:
             self.learnable_registers = torch.nn.Parameter(
-                torch.rand(self.num_learnable_registers, self.inner_dim, dtype=torch.bfloat16) * 2.0 - 1.0
+                torch.rand(
+                    self.num_learnable_registers, self.inner_dim, dtype=torch.bfloat16
+                )
+                * 2.0
+                - 1.0
             )
 
     def _replace_padded_with_learnable_registers(
@@ -137,16 +143,29 @@ class Embeddings1DConnector(torch.nn.Module):
             f"{self.num_learnable_registers}."
         )
 
-        num_registers_duplications = hidden_states.shape[1] // self.num_learnable_registers
-        learnable_registers = torch.tile(self.learnable_registers, (num_registers_duplications, 1))
-        attention_mask_binary = (attention_mask.squeeze(1).squeeze(1).unsqueeze(-1) >= -9000.0).int()
+        num_registers_duplications = (
+            hidden_states.shape[1] // self.num_learnable_registers
+        )
+        learnable_registers = torch.tile(
+            self.learnable_registers, (num_registers_duplications, 1)
+        )
+        attention_mask_binary = (
+            attention_mask.squeeze(1).squeeze(1).unsqueeze(-1) >= -9000.0
+        ).int()
 
-        non_zero_hidden_states = hidden_states[:, attention_mask_binary.squeeze().bool(), :]
+        non_zero_hidden_states = hidden_states[
+            :, attention_mask_binary.squeeze().bool(), :
+        ]
         non_zero_nums = non_zero_hidden_states.shape[1]
         pad_length = hidden_states.shape[1] - non_zero_nums
-        adjusted_hidden_states = torch.nn.functional.pad(non_zero_hidden_states, pad=(0, 0, 0, pad_length), value=0)
+        adjusted_hidden_states = torch.nn.functional.pad(
+            non_zero_hidden_states, pad=(0, 0, 0, pad_length), value=0
+        )
         flipped_mask = torch.flip(attention_mask_binary, dims=[1])
-        hidden_states = flipped_mask * adjusted_hidden_states + (1 - flipped_mask) * learnable_registers
+        hidden_states = (
+            flipped_mask * adjusted_hidden_states
+            + (1 - flipped_mask) * learnable_registers
+        )
 
         attention_mask = torch.full_like(
             attention_mask,
@@ -173,11 +192,21 @@ class Embeddings1DConnector(torch.nn.Module):
             tuple[torch.Tensor, torch.Tensor]: Processed features and the corresponding (possibly modified) mask.
         """
         if self.num_learnable_registers:
-            hidden_states, attention_mask = self._replace_padded_with_learnable_registers(hidden_states, attention_mask)
+            hidden_states, attention_mask = (
+                self._replace_padded_with_learnable_registers(
+                    hidden_states, attention_mask
+                )
+            )
 
-        indices_grid = torch.arange(hidden_states.shape[1], dtype=torch.float32, device=hidden_states.device)
+        indices_grid = torch.arange(
+            hidden_states.shape[1], dtype=torch.float32, device=hidden_states.device
+        )
         indices_grid = indices_grid[None, None, :]
-        freq_grid_generator = generate_freq_grid_np if self.double_precision_rope else generate_freq_grid_pytorch
+        freq_grid_generator = (
+            generate_freq_grid_np
+            if self.double_precision_rope
+            else generate_freq_grid_pytorch
+        )
         freqs_cis = precompute_freqs_cis(
             indices_grid=indices_grid,
             dim=self.inner_dim,
@@ -190,7 +219,9 @@ class Embeddings1DConnector(torch.nn.Module):
         )
 
         for block in self.transformer_1d_blocks:
-            hidden_states = block(hidden_states, attention_mask=attention_mask, pe=freqs_cis)
+            hidden_states = block(
+                hidden_states, attention_mask=attention_mask, pe=freqs_cis
+            )
 
         hidden_states = rms_norm(hidden_states)
 
@@ -199,7 +230,9 @@ class Embeddings1DConnector(torch.nn.Module):
 
 class Embeddings1DConnectorConfigurator(ModelConfigurator[Embeddings1DConnector]):
     @classmethod
-    def from_config(cls: type[Embeddings1DConnector], config: dict) -> Embeddings1DConnector:
+    def from_config(
+        cls: type[Embeddings1DConnector], config: dict
+    ) -> Embeddings1DConnector:
         config = config.get("transformer", {})
         rope_type = LTXRopeType(config.get("rope_type", "interleaved"))
         double_precision_rope = config.get("frequencies_precision", False) == "float64"

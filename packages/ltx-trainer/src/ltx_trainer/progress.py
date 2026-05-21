@@ -22,7 +22,13 @@ class SamplingContext:
     The progress bar shows the denoising progress for the current video.
     """
 
-    def __init__(self, progress: Progress | None, task: TaskID | None, num_prompts: int, num_steps: int):
+    def __init__(
+        self,
+        progress: Progress | None,
+        task: TaskID | None,
+        num_prompts: int,
+        num_steps: int,
+    ):
         self._progress = progress
         self._task = task
         self._num_prompts = num_prompts
@@ -209,7 +215,9 @@ class TrainingProgress:
         )
         # Update step count in video column
         completed = int(self._progress.tasks[self._train_task].completed)
-        self._progress.update(self._train_task, video=f"{completed}/{self._total_steps}")
+        self._progress.update(
+            self._train_task, video=f"{completed}/{self._total_steps}"
+        )
 
     def start_sampling(self, num_prompts: int, num_steps: int) -> SamplingContext:
         """Start validation sampling progress tracking.

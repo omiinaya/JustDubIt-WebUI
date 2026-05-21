@@ -9,7 +9,9 @@ class FeedForward(torch.nn.Module):
         inner_dim = int(dim * mult)
         project_in = GELUApprox(dim, inner_dim)
 
-        self.net = torch.nn.Sequential(project_in, torch.nn.Identity(), torch.nn.Linear(inner_dim, dim_out))
+        self.net = torch.nn.Sequential(
+            project_in, torch.nn.Identity(), torch.nn.Linear(inner_dim, dim_out)
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.net(x)

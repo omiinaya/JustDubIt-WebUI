@@ -37,7 +37,9 @@ class SpaceToDepthDownsample(nn.Module):
         causal: bool = True,
     ) -> torch.Tensor:
         if self.stride[0] == 2:
-            x = torch.cat([x[:, :, :1, :, :], x], dim=2)  # duplicate first frames for padding
+            x = torch.cat(
+                [x[:, :, :1, :, :], x], dim=2
+            )  # duplicate first frames for padding
 
         # skip connection
         x_in = rearrange(
@@ -77,7 +79,9 @@ class DepthToSpaceUpsample(nn.Module):
     ):
         super().__init__()
         self.stride = stride
-        self.out_channels = math.prod(stride) * in_channels // out_channels_reduction_factor
+        self.out_channels = (
+            math.prod(stride) * in_channels // out_channels_reduction_factor
+        )
         self.conv = make_conv_nd(
             dims=dims,
             in_channels=in_channels,

@@ -66,23 +66,35 @@ class LinearQuadraticScheduler(SchedulerProtocol):
     """
 
     def execute(
-        self, steps: int, threshold_noise: float = 0.025, linear_steps: int | None = None, **_kwargs
+        self,
+        steps: int,
+        threshold_noise: float = 0.025,
+        linear_steps: int | None = None,
+        **_kwargs,
     ) -> torch.FloatTensor:
         if steps == 1:
             return torch.FloatTensor([1.0, 0.0])
 
         if linear_steps is None:
             linear_steps = steps // 2
-        linear_sigma_schedule = [i * threshold_noise / linear_steps for i in range(linear_steps)]
+        linear_sigma_schedule = [
+            i * threshold_noise / linear_steps for i in range(linear_steps)
+        ]
         threshold_noise_step_diff = linear_steps - threshold_noise * steps
         quadratic_steps = steps - linear_steps
         quadratic_sigma_schedule = []
         if quadratic_steps > 0:
-            quadratic_coef = threshold_noise_step_diff / (linear_steps * quadratic_steps**2)
-            linear_coef = threshold_noise / linear_steps - 2 * threshold_noise_step_diff / (quadratic_steps**2)
+            quadratic_coef = threshold_noise_step_diff / (
+                linear_steps * quadratic_steps**2
+            )
+            linear_coef = (
+                threshold_noise / linear_steps
+                - 2 * threshold_noise_step_diff / (quadratic_steps**2)
+            )
             const = quadratic_coef * (linear_steps**2)
             quadratic_sigma_schedule = [
-                quadratic_coef * (i**2) + linear_coef * i + const for i in range(linear_steps, steps)
+                quadratic_coef * (i**2) + linear_coef * i + const
+                for i in range(linear_steps, steps)
             ]
         sigma_schedule = linear_sigma_schedule + quadratic_sigma_schedule + [1.0]
         sigma_schedule = [1.0 - x for x in sigma_schedule]
@@ -99,7 +111,9 @@ class BetaScheduler(SchedulerProtocol):
     shift = 2.37
     timesteps_length = 10000
 
-    def execute(self, steps: int, alpha: float = 0.6, beta: float = 0.6) -> torch.FloatTensor:
+    def execute(
+        self, steps: int, alpha: float = 0.6, beta: float = 0.6
+    ) -> torch.FloatTensor:
         """
         Execute the beta scheduler.
 
@@ -115,10 +129,14 @@ class BetaScheduler(SchedulerProtocol):
         Returns:
             A tensor of sigmas.
         """
-        model_sampling_sigmas = _precalculate_model_sampling_sigmas(self.shift, self.timesteps_length)
+        model_sampling_sigmas = _precalculate_model_sampling_sigmas(
+            self.shift, self.timesteps_length
+        )
         total_timesteps = len(model_sampling_sigmas) - 1
         ts = 1 - numpy.linspace(0, 1, steps, endpoint=False)
-        ts = numpy.rint(scipy.stats.beta.ppf(ts, alpha, beta) * total_timesteps).tolist()
+        ts = numpy.rint(
+            scipy.stats.beta.ppf(ts, alpha, beta) * total_timesteps
+        ).tolist()
         ts = list(dict.fromkeys(ts))
 
         sigmas = [float(model_sampling_sigmas[int(t)]) for t in ts] + [0.0]
@@ -126,7 +144,9 @@ class BetaScheduler(SchedulerProtocol):
 
 
 @lru_cache(maxsize=5)
-def _precalculate_model_sampling_sigmas(shift: float, timesteps_length: int) -> torch.Tensor:
+def _precalculate_model_sampling_sigmas(
+    shift: float, timesteps_length: int
+) -> torch.Tensor:
     timesteps = torch.arange(1, timesteps_length + 1, 1) / timesteps_length
     return torch.Tensor([flux_time_shift(shift, 1.0, t) for t in timesteps])
 
